@@ -68,7 +68,7 @@
         // KONFIGURASI APLIKASI
         // UBAH IS_PREVIEW KE false JIKA AKAN DI-DEPLOY KE BLOGGER
         const IS_PREVIEW = false; 
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxpy74GBLquI_S-2dNdRVDxxYaqbv3ruqvgTWxX6eIoCJPHRkInkbO0_fYjqGkIPlkdrQ/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzMwh29MXio0t2XLamOAbbvi0OBzp6WEah6dyrqToKnxTkqGxmgHUOUpkbhBMfmnIqRiw/exec";
 
         const app = {
             user: null, 
@@ -234,39 +234,49 @@
         app.changeView = function(viewName) { app.view = viewName; app.renderApp(); };
         app.logout = function() { app.user = null; app.helpTokens = 3; app.changeView('login'); };
 
+        // PERUBAHAN: Desain Login Split Screen (Logo di kiri, Form di Kanan) dengan Dark Mode
         function renderLogin(container) {
             container.innerHTML = `
-            <div class="max-w-[550px] mx-auto mt-6 relative flex items-center justify-center aspect-square sm:min-h-[550px]">
-                <!-- Frame Gambar Background -->
-                <div class="absolute inset-0 z-0 flex justify-center items-center pointer-events-none">
-                    <!-- PENTING: Ganti URL di bawah ini dengan URL gambar frame Anda -->
-                    <img src="https://i.imghippo.com/files/qutu6207KCw.png" class="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(59,130,246,0.2)] transform scale-110 sm:scale-100" alt="Andhalgo Frame" onerror="this.src='https://placehold.co/500x500/1e293b/ffffff?text=MASUKKAN+URL+GAMBAR+FRAME'">
+            <div class="max-w-4xl mx-auto glass-panel rounded-3xl overflow-hidden mt-10 sm:mt-16 transform transition-all flex flex-col md:flex-row shadow-[0_0_40px_rgba(0,0,0,0.6)] border border-slate-700">
+                
+                <!-- Bagian Kiri: Logo -->
+                <div class="w-full md:w-1/2 bg-slate-900/60 p-10 flex flex-col justify-center items-center relative overflow-hidden border-b md:border-b-0 md:border-r border-slate-700/50">
+                    <div class="absolute inset-0 bg-gradient-to-br from-blue-900/30 to-transparent"></div>
+                    <img src="https://i.imghippo.com/files/SYf1057aMI.png" class="w-48 sm:w-56 h-auto relative z-10 drop-shadow-[0_0_25px_rgba(59,130,246,0.5)] hover:scale-105 transition-transform duration-500" alt="Andhalgo Logo" onerror="this.style.display='none'">
+                    <div class="relative z-10 mt-8 text-center">
+                        <h1 class="text-3xl font-black text-white tracking-tight drop-shadow-md">ANDHALGO</h1>
+                        <p class="text-blue-400 text-xs font-mono-tech tracking-widest uppercase mt-2">Sistem Logika & Algoritma</p>
+                    </div>
                 </div>
 
-                <!-- Form Login (Diposisikan pas di tengah area putih frame) -->
-                <div class="relative z-10 w-[60%] sm:w-[50%] pb-4 sm:pb-8 ml-2 sm:ml-4 flex flex-col justify-center">
-                    <div class="text-center mb-4 sm:mb-6">
-                        <h2 class="text-slate-800 font-black text-2xl sm:text-3xl tracking-tight drop-shadow-sm">ANDHALGO</h2>
-                        <p class="text-blue-600 font-bold text-[10px] sm:text-xs font-mono-tech tracking-widest uppercase mt-1">System Login</p>
+                <!-- Bagian Kanan: Form Login -->
+                <div class="w-full md:w-1/2 p-8 sm:p-12 bg-slate-800/40 flex flex-col justify-center relative">
+                    <div class="mb-8 text-left">
+                        <h2 class="text-white font-bold text-2xl tracking-tight flex items-center gap-2"><i class="fa-solid fa-fingerprint text-blue-500"></i> Login Portal</h2>
+                        <p class="text-slate-400 text-sm mt-2">Masukkan kredensial akses Anda.</p>
                     </div>
                     
-                    <form id="login-form" class="space-y-3 sm:space-y-4">
+                    <form id="login-form" class="space-y-5">
                         <div>
-                            <div class="relative rounded-lg shadow-sm">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa-solid fa-terminal text-blue-500"></i></div>
-                                <input type="text" id="login-username" required class="w-full pl-9 p-2 sm:p-2.5 bg-white/90 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 outline-none placeholder-slate-400 transition text-xs sm:text-sm font-bold shadow-inner" placeholder="Username / ID">
+                            <div class="mt-1 relative rounded-lg shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i class="fa-solid fa-terminal text-blue-400"></i></div>
+                                <input type="text" id="login-username" required class="w-full pl-12 p-3.5 bg-slate-900/80 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white outline-none placeholder-slate-400 transition text-sm shadow-inner" placeholder="Username / ID">
                             </div>
                         </div>
                         <div>
-                            <div class="relative rounded-lg shadow-sm">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa-solid fa-lock text-blue-500"></i></div>
-                                <input type="password" id="login-password" required class="w-full pl-9 p-2 sm:p-2.5 bg-white/90 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 outline-none placeholder-slate-400 transition text-xs sm:text-sm font-bold shadow-inner" placeholder="Password Access">
+                            <div class="mt-1 relative rounded-lg shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i class="fa-solid fa-lock text-blue-400"></i></div>
+                                <input type="password" id="login-password" required class="w-full pl-12 p-3.5 bg-slate-900/80 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white outline-none placeholder-slate-400 transition text-sm shadow-inner" placeholder="Password Access">
                             </div>
                         </div>
-                        <button type="submit" class="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-2.5 sm:py-3 px-4 rounded-xl shadow-[0_8px_15px_rgba(79,70,229,0.3)] hover:shadow-[0_10px_20px_rgba(79,70,229,0.5)] transition-all transform hover:-translate-y-0.5 flex justify-center items-center gap-2 text-sm">
-                            <i class="fa-solid fa-rocket"></i> MASUK
+                        <button type="submit" class="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-[0_8px_20px_rgba(79,70,229,0.4)] hover:shadow-[0_12px_25px_rgba(79,70,229,0.6)] transition-all transform hover:-translate-y-0.5 flex justify-center items-center gap-2 text-sm tracking-wide">
+                            <i class="fa-solid fa-rocket"></i> INITIALIZE
                         </button>
                     </form>
+                    
+                    <div class="mt-10 text-center text-[11px] sm:text-xs text-slate-500 font-mono-tech border-t border-slate-700/50 pt-5">
+                        // Akses Terbatas //<br>Hanya untuk pengguna yang telah terdaftar.
+                    </div>
                 </div>
             </div>
             `;
