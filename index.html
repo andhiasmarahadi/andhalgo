@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANDHALGO - Game Petualangan Algoritma</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; padding: 0; min-height: 100vh;
+            background-color: #0f172a;
+            background-image: radial-gradient(#1e293b 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #f8fafc;
+        }
+        .font-mono-tech { font-family: 'JetBrains Mono', monospace; }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .grid-cell { width: 40px; height: 40px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.2s; }
+        .grid-cell.start { background-color: rgba(59, 130, 246, 0.2); }
+        .grid-cell.target { background-color: rgba(16, 185, 129, 0.2); }
+        .grid-cell.obstacle { 
+            background: linear-gradient(145deg, #1e293b, #0f172a); 
+            border-color: #334155; 
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5); 
+        }
+        .robot { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.8)); }
+        
+        /* Tema Gelap untuk SweetAlert */
+        .swal2-popup { background: #1e293b !important; color: #f8fafc !important; border: 1px solid #334155; }
+        .swal2-title { color: #f8fafc !important; }
+        .swal2-html-container { color: #cbd5e1 !important; }
+        .swal2-container { z-index: 9999999 !important; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body>
+    <div id="app-container" class="min-h-screen relative pb-16"></div>
+    
+    <div class="fixed bottom-0 w-full bg-slate-900/80 backdrop-blur text-slate-400 text-xs text-center py-2 border-t border-slate-800 z-50">
+        &copy; 2026 ANDHALGO - Hak Cipta oleh <b>Andhi Asmara Hadi</b>. All rights reserved.
+    </div>
+
+    <script>
+        const IS_PREVIEW = true; 
+        const GAS_URL = "URL_DEPLOY_GAS_ANDA_DISINI";
+
+        const app = {
+            user: null, 
+            view: 'login', 
+            helpTokens: 3, 
+            levels: [
+                { id: 1, name: "Langkah Awal", grid: 5, start: {x:0, y:4, dir:0}, target: {x:0, y:1}, obstacles: [], maxBlocks: 4, 
+                  desc: "Maju perlahan menuju bendera.", 
+                  solutionHint: "<ol class='list-decimal pl-5 mt-2 space-y-1 text-sm'><li>Forward (Maju)</li><li>Forward (Maju)</li><li>Forward (Maju)</li></ol>" },
+                { id: 2, name: "Belok Kanan", grid: 5, start: {x:0, y:4, dir:0}, target: {x:3, y:1}, obstacles: [{x:1,y:2}, {x:2,y:2}], maxBlocks: 8, 
+                  desc: "Belok untuk menghindari tembok di tengah jalan.", 
+                  solutionHint: "<ol class='list-decimal pl-5 mt-2 space-y-1 text-sm'><li>Forward (Maju) 3x</li><li>Right (Kanan)</li><li>Forward (Maju) 3x</li></ol>" },
+                { id: 3, name: "Sihir Perulangan (FOR)", grid: 6, start: {x:0, y:5, dir:1}, target: {x:5, y:5}, obstacles: [], maxBlocks: 3, 
+                  desc: "Gunakan FOR agar tidak lelah mengetik maju berulang kali.", 
+                  solutionHint: "<ol class='list-decimal pl-5 mt-2 space-y-1 text-sm'><li><b>FOR Nx</b> (Isi angka 5)</li><li>Forward (Maju)</li><li><b>TUTUP BLOK</b></li></ol>" },
+                { id: 4, name: "Pola Tangga", grid: 6, start: {x:0, y:5, dir:0}, target: {x:3, y:2}, obstacles: [{x:1,y:4}, {x:2,y:3}], maxBlocks: 6, 
+                  desc: "Ada pola gerakan yang berulang di sini. Manfaatkan blok FOR!", 
+                  solutionHint: "<ol class='list-decimal pl-5 mt-2 space-y-1 text-sm'><li><b>FOR Nx</b> (Isi angka 3)</li><li>Forward (Maju)</li><li>Right (Kanan)</li><li>Forward (Maju)</li><li>Left (Kiri)</li><li><b>TUTUP BLOK</b></li></ol>" },
+                { id: 5, name: "Maju Otomatis (WHILE)", grid: 7, start: {x:0, y:6, dir:1}, target: {x:6, y:6}, obstacles: [], maxBlocks: 3, 
+                  desc: "Selama jalanan di depanmu kosong, teruslah melangkah!", 
+                  solutionHint: "<ol class='list-decimal pl-5 mt-2 space-y-1 text-sm'><li><b>WHILE</b> (Depan Kosong)</li><li>Forward (Maju)</li><li><b>TUTUP BLOK</b></li></ol>" },
+                { id: 6, name: "Logika Mentok (IF)", grid: 6, start: {x:0, y:5, dir:0}, target: {x:5, y:0}, obstacles: [{x:1,y:5},{x:1,y:4},{x:1,y:3},{x:1,y:2},{x:1,y:1},{x:2,y:1},{x:3,y:1},{x:4,y:1}], maxBlocks: 6, 
+                  desc: "Jalur berbentuk 'L'. Cek apakah depanmu tembok (IF) sebelum berbelok.", 
+                  solutionHint: "<ol class='list-decimal pl-5 mt-2 space-y-1 text-sm'><li><b>REPEAT</b> (Terus)</li><li><b>IF</b> (Mentok Depan)</li><li>Right (Kanan)</li><li><b>TUTUP BLOK</b> (Tutup IF)</li><li>Forward (Maju)</li><li><b>TUTUP BLOK</b> (Tutup REPEAT)</li></ol>" },
+                { id: 7, name: "Labirin Spiral", grid: 7, start: {x:6, y:6, dir:3}, target: {x:3, y:3}, obstacles: [{x:1,y:5},{x:2,y:5},{x:3,y:5},{x:4,y:5},{x:5,y:5}, {x:1,y:1},{x:2,y:1},{x:3,y:1},{x:4,y:1},{x:5,y:1}, {x:1,y:2},{x:1,y:3},{x:1,y:4}, {x:5,y:2},{x:5,y:3}], maxBlocks: 6, 
+                  desc: "Terapkan kode yang persis sama dengan Level 6, dan lihat keajaiban Wall-Follower!", 
+                  solutionHint: "<ol class='list-decimal pl-5 mt-2 space-y-1 text-sm'><li><b>REPEAT</b> (Terus)</li><li><b>IF</b> (Mentok Depan)</li><li>Right (Kanan)</li><li><b>TUTUP BLOK</b> (Tutup IF)</li><li>Forward (Maju)</li><li><b>TUTUP BLOK</b> (Tutup REPEAT)</li></ol>" },
+                { id: 8, name: "Rintangan (Lompat)", grid: 7, start: {x:0, y:3, dir:1}, target: {x:6, y:3}, obstacles: [{x:1,y:3}, {x:3,y:3}, {x:5,y:3}], maxBlocks: 4, 
+                  desc: "Tembok ini bisa dilompati. Gunakan perintah Jump!", 
+                  solutionHint: "<ol class='list-decimal pl-5 mt-2 space-y-1 text-sm'><li><b>FOR Nx</b> (Isi angka 3)</li><li>Jump (Lompat)</li><li><b>TUTUP BLOK</b></li></ol>" },
+                { id: 9, name: "Parkour Pola (Kombinasi)", grid: 7, start: {x:0, y:6, dir:1}, target: {x:6, y:0}, obstacles: [{x:1,y:6}, {x:2,y:5}, {x:3,y:4}, {x:4,y:3}, {x:5,y:2}, {x:6,y:1}], maxBlocks: 7, 
+                  desc: "Lompat, belok kiri, lompat, belok kanan. Bisakah kamu memampatkannya?", 
+                  solutionHint: "<ol class='list-decimal pl-5 mt-2 space-y-1 text-sm'><li><b>FOR Nx</b> (Isi angka 3)</li><li>Jump (Lompat)</li><li>Left (Kiri)</li><li>Jump (Lompat)</li><li>Right (Kanan)</li><li><b>TUTUP BLOK</b></li></ol>" },
+                { id: 10, name: "Ujian Master", grid: 7, start: {x:0, y:6, dir:0}, target: {x:0, y:0}, obstacles: [{x:0,y:5}, {x:0,y:3}, {x:0,y:1}], maxBlocks: 6, 
+                  desc: "Tantangan akhir! Lompat berkali-kali sampai garis akhir.", 
+                  solutionHint: "<ol class='list-decimal pl-5 mt-2 space-y-1 text-sm'><li><b>FOR Nx</b> (Isi angka 3)</li><li>Jump (Lompat)</li><li><b>TUTUP BLOK</b></li></ol>" }
+            ],
+            currentGame: { level: null, commands: [], pos: {x:0, y:0, dir:0}, isPlaying: false },
+            dummyUsers: [
+                { id: 1, username: 'admin', password: 'edudigital', role: 'guru', nama: 'Andhi Asmara Hadi', kelas: '-', tahun_pelajaran: '-' },
+                { id: 2, username: 'peserta', password: 'edudigital', role: 'siswa', nama: 'Siswa Contoh', kelas: '9A', tahun_pelajaran: '2025/2026' }
+            ],
+            dummyProgress: [ { username: 'peserta', level_diselesaikan: 1, skor_diperoleh: 100 } ],
+            adminData: []
+        };
+
+        async function requestGAS(action, data) {
+            if (IS_PREVIEW) {
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        let res = { status: 'error', message: 'Action not found' };
+                        try {
+                            if (action === 'login') {
+                                const user = app.dummyUsers.find(u => u.username === data.username && u.password === data.password);
+                                if (user) res = { status: 'success', data: { username: user.username, role: user.role, nama: user.nama, kelas: user.kelas } };
+                                else res = { status: 'error', message: 'Username atau password salah!' };
+                            } 
+                            else if (action === 'getStudentStats') {
+                                const stats = app.dummyUsers.filter(u => u.role === 'siswa').map(u => {
+                                    const prog = app.dummyProgress.filter(p => p.username === u.username);
+                                    const maxLevel = prog.length > 0 ? Math.max(...prog.map(p => p.level_diselesaikan)) : 0;
+                                    const totalScore = prog.reduce((sum, p) => sum + p.skor_diperoleh, 0);
+                                    const detailSkor = {};
+                                    prog.forEach(p => detailSkor[p.level_diselesaikan] = p.skor_diperoleh);
+                                    return { username: u.username, nama: u.nama, kelas: u.kelas, tahun_pelajaran: u.tahun_pelajaran || '2025/2026', maxLevel, totalScore, detailSkor };
+                                });
+                                res = { status: 'success', data: stats };
+                            }
+                            else if (action === 'uploadStudentsBulk') {
+                                data.forEach(siswa => {
+                                    if(!app.dummyUsers.find(x => x.username === String(siswa.Username))){
+                                        app.dummyUsers.push({ id: Date.now()+Math.random(), username: String(siswa.Username), password: String(siswa.Password), role: 'siswa', nama: siswa['Nama Lengkap'], kelas: String(siswa.Kelas), tahun_pelajaran: String(siswa['Tahun Pelajaran']) });
+                                    }
+                                });
+                                res = { status: 'success', message: 'Berhasil upload data siswa' };
+                            }
+                            else if (action === 'getStudentProgress') {
+                                const prog = app.dummyProgress.filter(p => p.username === data.username);
+                                res = { status: 'success', data: prog };
+                            }
+                            else if (action === 'saveProgress') {
+                                const existingIdx = app.dummyProgress.findIndex(p => p.username === data.username && p.level_diselesaikan === data.level);
+                                if (existingIdx >= 0) {
+                                    if (data.skor > app.dummyProgress[existingIdx].skor_diperoleh) {
+                                        app.dummyProgress[existingIdx].skor_diperoleh = data.skor; 
+                                    }
+                                } else {
+                                    app.dummyProgress.push({ username: data.username, level_diselesaikan: data.level, skor_diperoleh: data.skor });
+                                }
+                                res = { status: 'success', message: 'Progress disimpan.' };
+                            }
+                            else if (action === 'resetProgress') {
+                                app.dummyProgress = app.dummyProgress.filter(p => p.username !== data.username);
+                                res = { status: 'success', message: 'Progres direset' };
+                            }
+                        } catch(err) {
+                            res = { status: 'error', message: err.message };
+                        }
+                        resolve(res);
+                    }, 500);
+                });
+            } else {
+                try {
+                    const response = await fetch(GAS_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: action, data: data }),
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                    });
+                    return await response.json();
+                } catch (err) {
+                    console.error("Fetch Error:", err);
+                    return { status: 'error', message: 'Gagal menghubungi server database.' };
+                }
+            }
+        }
+
+        app.renderApp = function() {
+            const container = document.getElementById('app-container');
+            container.innerHTML = ''; 
+
+            if (app.user) {
+                const nav = document.createElement('nav');
+                nav.className = 'glass-panel text-white p-4 flex justify-between items-center sticky top-0 z-40 border-b border-slate-700';
+                nav.innerHTML = `
+                    <div class="font-bold text-xl flex items-center gap-3">
+                        <img src="https://i.imghippo.com/files/SYf1057aMI.png" class="h-8 w-auto object-contain drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" alt="Logo" onerror="this.src='https://placehold.co/100x30/1e293b/ffffff?text=ANDHALGO'">
+                    </div>
+                    <div class="flex items-center gap-4 text-sm font-semibold">
+                        <div class="hidden sm:flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center border border-blue-400 shadow-[0_0_10px_rgba(37,99,235,0.5)]">
+                                <i class="fa-solid fa-user"></i>
+                            </div> 
+                            <span class="text-blue-200">${app.user.nama}</span>
+                        </div>
+                        <button onclick="app.logout()" class="bg-slate-800 hover:bg-slate-700 text-red-400 px-4 py-2 rounded-lg border border-slate-600 transition shadow-lg">
+                            <i class="fa-solid fa-power-off"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(nav);
+            }
+
+            const main = document.createElement('main');
+            main.className = 'p-4 md:p-8 max-w-7xl mx-auto';
+            container.appendChild(main);
+
+            if (app.view === 'login') renderLogin(main);
+            else if (app.view === 'student-dash') renderStudentDash(main);
+            else if (app.view === 'admin-dash') renderAdminDash(main);
+            else if (app.view === 'game') renderGame(main);
+        };
+
+        app.changeView = function(viewName) { app.view = viewName; app.renderApp(); };
+        app.logout = function() { app.user = null; app.helpTokens = 3; app.changeView('login'); };
+
+        function renderLogin(container) {
+            container.innerHTML = `
+            <div class="max-w-md mx-auto glass-panel rounded-2xl overflow-hidden mt-16 transform transition-all hover:scale-[1.01]">
+                <div class="p-8 text-center relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-b from-blue-900/50 to-transparent"></div>
+                    <img src="https://i.imghippo.com/files/SYf1057aMI.png" class="h-24 mx-auto mb-4 relative z-10 drop-shadow-[0_0_15px_rgba(59,130,246,0.8)] transition transform hover:scale-110" alt="Andhalgo Logo" onerror="this.style.display='none'">
+                    <p class="text-blue-200 text-sm mt-2 relative z-10 font-mono-tech tracking-widest uppercase">System Login Protocol</p>
+                </div>
+                <div class="p-8 pt-0">
+                    <form id="login-form" class="space-y-5">
+                        <div>
+                            <div class="mt-1 relative rounded-lg shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i class="fa-solid fa-terminal text-blue-400"></i></div>
+                                <input type="text" id="login-username" required class="w-full pl-12 p-3 bg-slate-800/80 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 text-white outline-none placeholder-slate-400 transition" placeholder="Username / ID">
+                            </div>
+                        </div>
+                        <div>
+                            <div class="mt-1 relative rounded-lg shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i class="fa-solid fa-lock text-blue-400"></i></div>
+                                <input type="password" id="login-password" required class="w-full pl-12 p-3 bg-slate-800/80 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 text-white outline-none placeholder-slate-400 transition" placeholder="Password Access">
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-4 rounded-xl shadow-[0_0_15px_rgba(79,70,229,0.5)] transition flex justify-center items-center gap-2">
+                            <i class="fa-solid fa-rocket"></i> INITIALIZE
+                        </button>
+                    </form>
+                    <div class="mt-8 text-center text-xs text-slate-500 font-mono-tech border-t border-slate-700/50 pt-4">
+                        // Akses Terbatas<br>Hanya untuk siswa yang telah didaftarkan oleh Guru.
+                    </div>
+                </div>
+            </div>
+            `;
+            
+            document.getElementById('login-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    const u = document.getElementById('login-username').value;
+                    const p = document.getElementById('login-password').value;
+                    Swal.fire({ title: 'Authenticating...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+                    const res = await requestGAS('login', { username: u, password: p });
+                    if (res.status === 'success') {
+                        app.user = res.data; app.helpTokens = 3;
+                        Swal.close();
+                        if (app.user.role === 'guru') app.changeView('admin-dash'); else app.changeView('student-dash');
+                    } else Swal.fire('Akses Ditolak', res.message, 'error');
+                } catch(error) {
+                    Swal.fire('Error', 'Terjadi kesalahan sistem saat login.', 'error');
+                }
+            });
+        }
+
+        async function renderStudentDash(container) {
+            container.innerHTML = `<div class="text-center my-20"><i class="fa-solid fa-circle-notch fa-spin text-5xl text-blue-500"></i><p class="mt-4 text-blue-300 font-mono-tech">Memuat Data Server...</p></div>`;
+            
+            try {
+                const res = await requestGAS('getStudentProgress', { username: app.user.username });
+                const progress = res.status === 'success' ? res.data : [];
+                const maxLevelCleared = progress.length > 0 ? Math.max(...progress.map(p => p.level_diselesaikan)) : 0;
+                const totalScore = progress.reduce((sum, p) => sum + p.skor_diperoleh, 0);
+
+                let levelsHtml = '';
+                app.levels.forEach((lvl, index) => {
+                    const isUnlocked = index === 0 || lvl.id <= maxLevelCleared + 1;
+                    const isCleared = lvl.id <= maxLevelCleared;
+                    const progData = progress.find(p => p.level_diselesaikan === lvl.id);
+                    const score = progData ? progData.skor_diperoleh : 0;
+                    
+                    const bgClass = isUnlocked ? (isCleared ? 'bg-emerald-900/40 border-emerald-500/50' : 'glass-panel border-blue-400/50') : 'bg-slate-800/30 border-slate-700/50 opacity-50 grayscale';
+                    const icon = isUnlocked ? (isCleared ? '<i class="fa-solid fa-circle-check text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.8)]"></i>' : '<i class="fa-solid fa-play text-blue-400 drop-shadow-[0_0_5px_rgba(96,165,250,0.8)]"></i>') : '<i class="fa-solid fa-lock text-slate-500"></i>';
+                    
+                    levelsHtml += `
+                    <div class="${bgClass} border rounded-2xl p-5 transition-all duration-300 ${isUnlocked ? 'cursor-pointer hover:-translate-y-2 hover:shadow-[0_10px_20px_rgba(59,130,246,0.2)]' : ''}" ${isUnlocked ? `onclick="app.startGame(${lvl.id})"` : ''}>
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="font-bold text-xl text-white font-mono-tech">Level ${lvl.id}</div>
+                            <div class="text-3xl">${icon}</div>
+                        </div>
+                        <div class="text-sm font-semibold text-blue-200 mb-2">${lvl.name}</div>
+                        <div class="text-xs text-slate-400 h-10">${isUnlocked ? lvl.desc : 'Terkunci. Selesaikan level sebelumnya.'}</div>
+                        ${isUnlocked ? `<div class="mt-4 pt-3 border-t border-slate-700/50 text-xs font-bold font-mono-tech ${isCleared ? 'text-emerald-400' : 'text-slate-500'}">HIGH SCORE: ${score}</div>` : ''}
+                    </div>
+                    `;
+                });
+
+                container.innerHTML = `
+                <div class="relative rounded-3xl p-8 mb-10 overflow-hidden shadow-[0_0_30px_rgba(30,58,138,0.5)] border border-blue-500/30">
+                    <div class="absolute inset-0 bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900"></div>
+                    <div class="absolute -right-10 -top-10 w-64 h-64 rounded-full bg-blue-500/20 blur-3xl"></div>
+                    <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div>
+                            <div class="text-blue-300 text-sm font-mono-tech mb-1 uppercase tracking-widest">Selamat Datang,</div>
+                            <h2 class="text-4xl font-black text-white tracking-tight mb-2">${app.user.nama}</h2>
+                            <p class="text-blue-200/80">Siap memecahkan logika algoritma hari ini?</p>
+                        </div>
+                        <div class="text-center bg-slate-900/60 border border-slate-700 px-8 py-4 rounded-2xl backdrop-blur">
+                            <div class="text-xs text-slate-400 uppercase tracking-widest mb-1 font-semibold">Total Intelligence Score</div>
+                            <div class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-amber-500 drop-shadow">${totalScore}</div>
+                        </div>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-6 flex items-center gap-3"><i class="fa-solid fa-network-wired text-blue-500"></i> Mission Map</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">${levelsHtml}</div>
+                `;
+            } catch (err) {
+                Swal.fire('Error', 'Gagal memuat dashboard.', 'error');
+            }
+        }
+
+        async function renderAdminDash(container) {
+            container.innerHTML = `<div class="text-center my-20"><i class="fa-solid fa-circle-notch fa-spin text-5xl text-blue-500"></i><p class="mt-4 text-blue-300 font-mono-tech">Memuat Database...</p></div>`;
+            
+            try {
+                const res = await requestGAS('getStudentStats', {});
+                app.adminData = res.status === 'success' ? res.data : [];
+                const kelasUnik = [...new Set(app.adminData.map(item => item.kelas))];
+                const tahunUnik = [...new Set(app.adminData.map(item => item.tahun_pelajaran))];
+                const totalSiswa = app.adminData.length;
+                const siswaAktif = app.adminData.filter(s => s.maxLevel > 0).length;
+
+                container.innerHTML = `
+                <div class="flex flex-col lg:flex-row gap-6 mb-8">
+                    <div class="flex-1 relative rounded-3xl p-6 overflow-hidden shadow-lg border border-blue-500/30">
+                        <div class="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900"></div>
+                        <div class="relative z-10">
+                            <h2 class="text-3xl font-black text-white mb-2">Command Center</h2>
+                            <p class="text-slate-400">Panel Kendali Guru ANDHALGO</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="glass-panel p-6 rounded-3xl flex-1 flex flex-col justify-center items-center relative overflow-hidden">
+                            <i class="fa-solid fa-users absolute -right-4 -bottom-4 text-7xl text-white/5"></i>
+                            <div class="text-4xl font-black text-blue-400 relative z-10">${totalSiswa}</div>
+                            <div class="text-xs text-slate-400 uppercase tracking-widest relative z-10">Total Siswa</div>
+                        </div>
+                        <div class="glass-panel p-6 rounded-3xl flex-1 flex flex-col justify-center items-center relative overflow-hidden">
+                            <i class="fa-solid fa-gamepad absolute -right-4 -bottom-4 text-7xl text-white/5"></i>
+                            <div class="text-4xl font-black text-emerald-400 relative z-10">${siswaAktif}</div>
+                            <div class="text-xs text-slate-400 uppercase tracking-widest relative z-10">Siswa Aktif</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-6 mb-6 flex flex-wrap gap-4 items-end justify-between border-t-4 border-t-blue-500">
+                    <div class="flex gap-4 flex-wrap">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide">Filter Tahun</label>
+                            <select id="filter-tahun" onchange="app.renderAdminTable()" class="p-2.5 bg-slate-800 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none min-w-[150px]">
+                                <option value="ALL">Semua Tahun</option>
+                                ${tahunUnik.map(t => `<option value="${t}">${t}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide">Filter Kelas</label>
+                            <select id="filter-kelas" onchange="app.renderAdminTable()" class="p-2.5 bg-slate-800 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none min-w-[150px]">
+                                <option value="ALL">Semua Kelas</option>
+                                ${kelasUnik.map(k => `<option value="${k}">${k}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="file" id="upload-excel" accept=".xlsx, .xls, .csv" class="hidden" onchange="app.handleFileUpload(event)">
+                        <button onclick="document.getElementById('upload-excel').click()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-lg text-sm shadow font-bold transition"><i class="fa-solid fa-upload"></i> Upload</button>
+                        <button onclick="app.downloadTemplate()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-lg text-sm border border-slate-500 shadow font-bold transition"><i class="fa-solid fa-download"></i> Template</button>
+                        <button onclick="app.printPDF()" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2.5 rounded-lg text-sm shadow font-bold transition"><i class="fa-solid fa-file-pdf"></i> Cetak PDF</button>
+                    </div>
+                </div>
+
+                <div id="admin-table-container" class="glass-panel rounded-2xl overflow-hidden border border-slate-700"></div>
+                `;
+                app.renderAdminTable();
+            } catch(err) {
+                Swal.fire('Error', 'Gagal memuat data admin.', 'error');
+            }
+        }
+
+        app.renderAdminTable = function() {
+            const tContainer = document.getElementById('admin-table-container');
+            const fKelas = document.getElementById('filter-kelas').value;
+            const fTahun = document.getElementById('filter-tahun').value;
+
+            let filteredData = app.adminData.filter(s => {
+                const matchKelas = fKelas === 'ALL' || s.kelas === fKelas;
+                const matchTahun = fTahun === 'ALL' || s.tahun_pelajaran === fTahun;
+                return matchKelas && matchTahun;
+            });
+
+            let levelHeaders = '';
+            for(let i = 1; i <= 10; i++) levelHeaders += `<th class="p-3 text-center text-xs border-l border-slate-700 text-blue-300">L${i}</th>`;
+
+            let tableRows = '';
+            filteredData.sort((a,b) => b.totalScore - a.totalScore).forEach((s, idx) => {
+                let levelScoresHtml = '';
+                for(let i = 1; i <= 10; i++) {
+                    const score = s.detailSkor && s.detailSkor[i] ? s.detailSkor[i] : '-';
+                    levelScoresHtml += `<td class="p-3 text-center text-xs border-l border-slate-700 font-mono-tech ${score !== '-' ? 'text-emerald-400' : 'text-slate-600'}">${score}</td>`;
+                }
+                tableRows += `
+                <tr class="border-b border-slate-700 hover:bg-slate-800/50 transition">
+                    <td class="p-3 text-center text-sm text-slate-400">${idx + 1}</td>
+                    <td class="p-3 font-semibold text-sm whitespace-nowrap text-white">${s.nama}</td>
+                    <td class="p-3 text-center text-sm text-slate-300">${s.kelas}</td>
+                    <td class="p-3 text-center text-sm text-slate-400">${s.tahun_pelajaran}</td>
+                    ${levelScoresHtml}
+                    <td class="p-3 text-center font-bold text-amber-400 border-l border-slate-700 text-lg">${s.totalScore}</td>
+                    <td class="p-3 text-center border-l border-slate-700" data-html2canvas-ignore="true">
+                        <button onclick="app.resetStudentProgress('${s.username}', '${s.nama}')" class="text-slate-500 hover:text-red-400 transition" title="Reset Progres"><i class="fa-solid fa-rotate-left"></i></button>
+                    </td>
+                </tr>`;
+            });
+
+            if(filteredData.length === 0) tableRows = `<tr><td colspan="16" class="p-8 text-center text-slate-500 font-mono-tech">>> Data not found // No records match criteria</td></tr>`;
+
+            tContainer.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse" id="report-table">
+                        <thead>
+                            <tr class="bg-slate-900/80 text-slate-300 text-sm border-b-2 border-slate-600 uppercase tracking-wider">
+                                <th class="p-4 text-center w-10">No</th>
+                                <th class="p-4 min-w-[150px]">Nama Siswa</th>
+                                <th class="p-4 text-center">Kelas</th>
+                                <th class="p-4 text-center">Tahun</th>
+                                ${levelHeaders}
+                                <th class="p-4 text-center border-l border-slate-700 min-w-[100px] text-yellow-300">Total Skor</th>
+                                <th class="p-4 text-center border-l border-slate-700 w-16" data-html2canvas-ignore="true">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">${tableRows}</tbody>
+                    </table>
+                </div>
+            `;
+        };
+
+        app.resetStudentProgress = function(username, nama) {
+            Swal.fire({
+                title: 'Reset Progres?', text: `Semua nilai dan progres milik ${nama} akan dihapus permanen.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Ya, Reset!'
+            }).then(async (res) => {
+                if(res.isConfirmed) {
+                    try {
+                        Swal.fire({ title: 'Mereset...', didOpen: () => { Swal.showLoading() }});
+                        await requestGAS('resetProgress', { username: username });
+                        app.changeView('admin-dash');
+                    } catch(err) {
+                        Swal.fire('Error', 'Gagal mereset data', 'error');
+                    }
+                }
+            }).catch(err => console.error(err));
+        };
+
+        app.downloadTemplate = function() {
+            try {
+                const wsData = [ ["Nama Lengkap", "Kelas", "Tahun Pelajaran", "Username", "Password"], ["Siswa Contoh", "9A", "2025/2026", "siswa1", "12345"] ];
+                const ws = XLSX.utils.aoa_to_sheet(wsData); const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Template Siswa"); XLSX.writeFile(wb, "Template_Upload_Siswa.xlsx");
+            } catch(e) {
+                Swal.fire('Error', 'Gagal mengunduh template.', 'error');
+            }
+        };
+
+        app.handleFileUpload = function(event) {
+            const file = event.target.files[0]; if(!file) return;
+            Swal.fire({ title: 'Membaca File...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'});
+                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                    if(jsonData.length === 0) { Swal.fire('Error', 'File kosong!', 'error'); return; }
+                    const reqKeys = ["Nama Lengkap", "Kelas", "Tahun Pelajaran", "Username", "Password"];
+                    if(!reqKeys.every(k => Object.keys(jsonData[0]).includes(k))) { Swal.fire('Format Salah', 'Header harus sama dengan template!', 'error'); return; }
+                    const res = await requestGAS('uploadStudentsBulk', jsonData);
+                    if(res.status === 'success') Swal.fire('Berhasil!', `Data diunggah.`, 'success').then(() => app.changeView('admin-dash'));
+                    else Swal.fire('Gagal', res.message, 'error');
+                } catch (err) { Swal.fire('Error', 'Gagal membaca format .xlsx', 'error'); }
+            };
+            reader.onerror = function() {
+                Swal.fire('Error', 'Terjadi kesalahan saat membaca file fisik.', 'error');
+            };
+            reader.readAsArrayBuffer(file); event.target.value = ''; 
+        };
+
+        app.printPDF = function() {
+            const tableElement = document.getElementById('report-table');
+            if(!tableElement) return;
+
+            Swal.fire({ title: 'Menyiapkan PDF...', text: 'Membangun layout', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+            
+            const printContainer = document.createElement('div');
+            printContainer.id = 'pdf-export-container';
+            printContainer.style.position = 'absolute'; printContainer.style.left = '-9999px'; printContainer.style.top = '0';
+            printContainer.style.width = '1122px'; printContainer.style.backgroundColor = '#ffffff';
+            printContainer.style.padding = '40px'; printContainer.style.fontFamily = 'Arial, sans-serif';
+
+            // PENTING: Gambar Placeholder yang Valid (Untuk mencegah Unhandled Rejection). 
+            // Ganti URL `https://placehold.co/...` dengan Base64 atau URL gambar Blogger Anda.
+            const headerDiv = document.createElement('div');
+            headerDiv.style.textAlign = 'center'; headerDiv.style.marginBottom = '30px';
+            headerDiv.innerHTML = `
+                <img src='https://placehold.co/800x200/ffffff/1e3a8a?text=GANTI+DENGAN+GAMBAR+KOP+ANDA' style='max-width: 100%; height: auto; max-height: 150px; object-fit: contain; margin: 0 auto; display: block;' onerror='this.style.display="none"'>
+                <div style='margin-top: 15px; border-bottom: 2px solid #cbd5e1; width: 100%;'></div>
+            `;
+            printContainer.appendChild(headerDiv);
+            
+            const clonedTable = tableElement.cloneNode(true);
+            clonedTable.style.width = '100%'; clonedTable.style.borderCollapse = 'collapse';
+            
+            const aksiHeader = clonedTable.querySelector('th[data-html2canvas-ignore="true"]');
+            if(aksiHeader) aksiHeader.remove();
+            clonedTable.querySelectorAll('tbody tr').forEach(row => { if(row.children.length > 1) row.removeChild(row.lastElementChild); });
+
+            clonedTable.querySelectorAll('th, td').forEach(cell => { cell.style.border = '1px solid #94a3b8'; cell.style.padding = '12px 8px'; cell.style.fontSize = '12px'; cell.style.color = '#000000'; });
+            clonedTable.querySelectorAll('th').forEach(th => { th.style.backgroundColor = '#e2e8f0'; th.style.fontWeight = 'bold'; th.style.color = '#1e293b'; });
+            printContainer.appendChild(clonedTable);
+
+            const today = new Date(); const dateStr = today.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const docFooter = document.createElement('div');
+            docFooter.style.marginTop = '40px'; docFooter.style.fontSize = '12px'; docFooter.style.color = '#64748b'; docFooter.style.display = 'flex'; docFooter.style.justifyContent = 'space-between';
+            docFooter.innerHTML = `<div>Dokumen dicetak otomatis oleh ANDHALGO.</div><div><b>Tanggal Cetak:</b> ${dateStr}</div>`;
+            printContainer.appendChild(docFooter);
+
+            document.body.appendChild(printContainer);
+
+            setTimeout(() => {
+                const opt = { margin: [0, 0, 0, 0], filename: 'Laporan_Nilai_ANDHALGO.pdf', image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2, backgroundColor: '#ffffff', useCORS: true }, jsPDF: { unit: 'pt', format: 'a4', orientation: 'landscape' } };
+                
+                // Pelindung Promise PDF (Mencegah UnhandledRejection)
+                html2pdf().set(opt).from(printContainer).save().then(() => { 
+                    if(document.body.contains(printContainer)) document.body.removeChild(printContainer); 
+                    Swal.close(); 
+                }).catch(err => {
+                    console.error("PDF Engine Error:", err);
+                    if(document.body.contains(printContainer)) document.body.removeChild(printContainer);
+                    Swal.fire('Error', 'Gagal mencetak PDF. Pastikan gambar KOP bisa dimuat (CORS/URL Valid).', 'error');
+                });
+            }, 1000); 
+        };
+
+        app.startGame = function(levelId) {
+            app.currentGame.level = app.levels.find(l => l.id === levelId);
+            app.currentGame.commands = []; app.currentGame.pos = { ...app.currentGame.level.start }; app.currentGame.isPlaying = false;
+            app.changeView('game');
+        };
+
+        function renderGame(container) {
+            container.innerHTML = `
+            <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <div class="text-blue-400 font-mono-tech text-sm mb-1 uppercase tracking-widest"><i class="fa-solid fa-satellite-dish"></i> Target Terkunci</div>
+                    <h2 class="text-3xl font-black text-white drop-shadow">Level ${app.currentGame.level.id}: ${app.currentGame.level.name}</h2>
+                    <p class="text-slate-300 mt-2 bg-slate-800/50 p-3 rounded-lg border border-slate-700 backdrop-blur inline-block"><i class="fa-solid fa-circle-info text-blue-400 mr-2"></i>${app.currentGame.level.desc}</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="app.showHelp()" class="bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/50 px-5 py-2.5 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.2)] font-bold transition flex items-center gap-2">
+                        <i class="fa-solid fa-bolt"></i> Hint (<span id="help-count">${app.helpTokens}</span>)
+                    </button>
+                    <button onclick="app.quitGame()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-5 py-2.5 rounded-xl transition font-bold shadow-lg">
+                        <i class="fa-solid fa-person-walking-arrow-right"></i> Kembali
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-6">
+                <div class="flex-1 glass-panel p-8 rounded-3xl flex flex-col items-center justify-center min-h-[450px] relative overflow-hidden">
+                    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-900/50 to-transparent"></div>
+                    <div id="game-board" class="relative bg-slate-900 p-2 rounded-xl border border-slate-700 shadow-[0_0_30px_rgba(0,0,0,0.5)] z-10"></div>
+                </div>
+
+                <div class="w-full lg:w-[420px] flex flex-col gap-4">
+                    <div class="glass-panel rounded-2xl p-5 border-t-4 border-t-emerald-500">
+                        <h3 class="font-bold text-white mb-3 text-sm font-mono-tech"><i class="fa-solid fa-microchip text-emerald-400 mr-2"></i>M.O.V.E PROTOCOL</h3>
+                        <div class="grid grid-cols-2 gap-2 mb-4">
+                            <button onclick="app.addCommand('MAJU')" class="bg-slate-800 hover:bg-blue-600 text-slate-200 hover:text-white p-3 rounded-lg border border-slate-600 hover:border-blue-400 text-xs font-bold transition flex flex-col items-center gap-2"><i class="fa-solid fa-arrow-up text-lg"></i> Forward (Maju)</button>
+                            <button onclick="app.addCommand('LOMPAT')" class="bg-slate-800 hover:bg-cyan-600 text-slate-200 hover:text-white p-3 rounded-lg border border-slate-600 hover:border-cyan-400 text-xs font-bold transition flex flex-col items-center gap-2"><i class="fa-solid fa-plane-departure text-lg"></i> Jump (Lompat)</button>
+                            <button onclick="app.addCommand('KIRI')" class="bg-slate-800 hover:bg-purple-600 text-slate-200 hover:text-white p-3 rounded-lg border border-slate-600 hover:border-purple-400 text-xs font-bold transition flex flex-col items-center gap-2"><i class="fa-solid fa-undo text-lg"></i> Left (Kiri)</button>
+                            <button onclick="app.addCommand('KANAN')" class="bg-slate-800 hover:bg-orange-600 text-slate-200 hover:text-white p-3 rounded-lg border border-slate-600 hover:border-orange-400 text-xs font-bold transition flex flex-col items-center gap-2"><i class="fa-solid fa-redo text-lg"></i> Right (Kanan)</button>
+                        </div>
+                        
+                        <h3 class="font-bold text-white mb-3 text-sm font-mono-tech"><i class="fa-solid fa-code text-pink-400 mr-2"></i>L.O.G.I.C BLOCK</h3>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <button onclick="app.promptForLoop()" class="bg-slate-800 hover:bg-emerald-600/50 text-emerald-400 hover:text-emerald-300 p-2.5 rounded-lg border border-slate-600 hover:border-emerald-500 text-xs font-bold transition flex items-center justify-center gap-2"><i class="fa-solid fa-sync-alt"></i> FOR Nx</button>
+                            <button onclick="app.addCommand('BLOCK_WHILE')" class="bg-slate-800 hover:bg-teal-600/50 text-teal-400 hover:text-teal-300 p-2.5 rounded-lg border border-slate-600 hover:border-teal-500 text-xs font-bold transition flex items-center justify-center gap-2"><i class="fa-solid fa-forward-step"></i> WHILE</button>
+                            <button onclick="app.addCommand('BLOCK_FOREVER')" class="bg-slate-800 hover:bg-indigo-600/50 text-indigo-400 hover:text-indigo-300 p-2.5 rounded-lg border border-slate-600 hover:border-indigo-500 text-xs font-bold transition flex items-center justify-center gap-2 col-span-2"><i class="fa-solid fa-infinity"></i> REPEAT (Terus)</button>
+                            <button onclick="app.addCommand('BLOCK_IF')" class="bg-slate-800 hover:bg-pink-600/50 text-pink-400 hover:text-pink-300 p-2.5 rounded-lg border border-slate-600 hover:border-pink-500 text-xs font-bold transition flex items-center justify-center gap-2 col-span-2"><i class="fa-solid fa-code-branch"></i> IF (Mentok Depan)</button>
+                        </div>
+                        <button onclick="app.addCommand('END_BLOCK')" class="w-full bg-slate-900 text-slate-500 p-2.5 rounded-lg border border-slate-700 border-dashed text-xs font-bold hover:text-slate-300 hover:border-slate-500 transition flex justify-center items-center gap-2 mt-1"><i class="fa-solid fa-level-up-alt"></i> } TUTUP BLOK</button>
+                    </div>
+                    
+                    <div class="glass-panel p-5 rounded-2xl flex-1 flex flex-col border border-slate-700">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-bold text-blue-300 font-mono-tech flex items-center gap-2"><i class="fa-solid fa-terminal"></i> script.js 
+                                <span id="block-counter" class="text-[10px] bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30 ml-2">0/Max</span>
+                            </h3>
+                            <button onclick="app.clearCommands()" class="text-red-400 hover:text-red-300 text-xs font-bold transition"><i class="fa-solid fa-trash-can"></i> Clear</button>
+                        </div>
+                        <div id="command-list" class="flex-1 bg-slate-950 rounded-xl border border-slate-800 p-3 overflow-y-auto max-h-[250px] flex flex-col gap-1.5 font-mono-tech text-sm shadow-inner"></div>
+                        <button onclick="app.runCode()" id="btn-run" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.4)] transition flex items-center justify-center gap-2 text-lg">
+                            <i class="fa-solid fa-play"></i> COMPILE & RUN
+                        </button>
+                    </div>
+                </div>
+            </div>
+            `;
+            app.drawBoard(); app.renderCommands();
+        }
+
+        app.drawBoard = function() {
+            const board = document.getElementById('game-board'); if(!board) return;
+            const lvl = app.currentGame.level; const pos = app.currentGame.pos;
+            board.style.display = 'grid'; board.style.gridTemplateColumns = `repeat(${lvl.grid}, 40px)`; board.style.gridTemplateRows = `repeat(${lvl.grid}, 40px)`; board.innerHTML = '';
+            for (let y = 0; y < lvl.grid; y++) {
+                for (let x = 0; x < lvl.grid; x++) {
+                    const cell = document.createElement('div'); cell.className = 'grid-cell';
+                    if (x === lvl.start.x && y === lvl.start.y) cell.classList.add('start');
+                    if (x === lvl.target.x && y === lvl.target.y) { cell.classList.add('target'); cell.innerHTML = '<i class="fa-solid fa-flag-checkered text-emerald-400 drop-shadow"></i>'; }
+                    if (lvl.obstacles.some(ob => ob.x === x && ob.y === y)) cell.classList.add('obstacle');
+                    if (x === pos.x && y === pos.y) cell.innerHTML = `<i class="fa-solid fa-robot text-blue-400 text-2xl robot" style="transform: rotate(${pos.dir * 90}deg);"></i>`;
+                    board.appendChild(cell);
+                }
+            }
+        };
+
+        app.addCommand = function(cmd) {
+            if (app.currentGame.isPlaying) return;
+            const max = app.currentGame.level.maxBlocks;
+            if (app.currentGame.commands.length >= max) { Swal.fire({ icon: 'warning', title: 'Memory Full!', text: `Hanya diizinkan ${max} baris kode. Gunakan Loop!`}); return; }
+            if (cmd === 'END_BLOCK' && app.currentGame.commands.filter(c => c.startsWith('BLOCK_')).length <= app.currentGame.commands.filter(c => c === 'END_BLOCK').length) { Swal.fire({icon: 'info', title: 'Oops!', text: 'Tidak ada blok yang terbuka.'}); return; }
+            app.currentGame.commands.push(cmd); app.renderCommands();
+        };
+
+        app.clearCommands = function() { if (app.currentGame.isPlaying) return; app.currentGame.commands = []; app.currentGame.pos = { ...app.currentGame.level.start }; app.drawBoard(); app.renderCommands(); };
+        app.removeCommand = function(index) { if (app.currentGame.isPlaying) return; app.currentGame.commands.splice(index, 1); app.renderCommands(); };
+
+        app.promptForLoop = function() {
+            if (app.currentGame.isPlaying) return;
+            Swal.fire({ title: 'Set Parameter N', input: 'number', inputAttributes: { min: 2, max: 50, step: 1 }, inputValue: 3, showCancelButton: true, confirmButtonColor: '#10b981', confirmButtonText: 'Submit' })
+            .then((r) => { if (r.isConfirmed && r.value) app.addCommand('BLOCK_FOR_' + r.value); }).catch(err => console.error(err));
+        };
+
+        app.renderCommands = function() {
+            const list = document.getElementById('command-list'); const counter = document.getElementById('block-counter'); if(!list || !counter) return;
+            const cur = app.currentGame.commands.length; const max = app.currentGame.level.maxBlocks;
+            counter.innerText = `${cur}/${max}`; counter.className = `text-[10px] px-2 py-0.5 rounded border ml-2 ${cur >= max ? 'bg-red-900/50 text-red-300 border-red-500/30' : 'bg-blue-900/50 text-blue-300 border-blue-500/30'}`;
+            if (cur === 0) { list.innerHTML = '<div class="text-center text-slate-600 mt-10 text-xs">// Kode masih kosong. Ketik perintah di panel sebelah kiri.</div>'; return; }
+            let html = ''; let indent = 0; 
+            app.currentGame.commands.forEach((cmd, idx) => {
+                if (cmd === 'END_BLOCK') indent = Math.max(0, indent - 1);
+                let text = '', color = 'text-blue-300'; let mLeft = indent * 20;
+                if (cmd === 'MAJU') { text = 'move.forward();'; color = 'text-blue-300'; }
+                else if (cmd === 'KIRI') { text = 'turn.left();'; color = 'text-purple-300'; }
+                else if (cmd === 'KANAN') { text = 'turn.right();'; color = 'text-orange-300'; }
+                else if (cmd === 'LOMPAT') { text = 'move.jump();'; color = 'text-cyan-300'; }
+                else if (cmd === 'BLOCK_WHILE') { text = 'while (isPathClear()) {'; color = 'text-teal-400'; }
+                else if (cmd === 'BLOCK_FOREVER') { text = 'while (true) {'; color = 'text-indigo-400'; }
+                else if (cmd === 'BLOCK_IF') { text = 'if (isWallAhead()) {'; color = 'text-pink-400'; }
+                else if (cmd === 'END_BLOCK') { text = '}'; color = 'text-slate-500'; }
+                else if (cmd.startsWith('BLOCK_FOR_')) { text = `for (i=0; i<${cmd.split('_')[2]}; i++) {`; color = 'text-emerald-400'; }
+                
+                html += `
+                <div class="flex items-center justify-between group hover:bg-slate-800/50 p-1 rounded" style="padding-left: ${mLeft}px" id="cmd-${idx}">
+                    <div class="flex gap-3"><span class="text-slate-600 select-none w-4 text-right">${idx+1}</span><span class="${color}">${text}</span></div>
+                    <button onclick="app.removeCommand(${idx})" class="text-red-500/0 group-hover:text-red-400 transition"><i class="fa-solid fa-xmark"></i></button>
+                </div>`;
+                if (cmd.startsWith('BLOCK_')) indent++;
+            });
+            if (indent > 0) html += `<div class="text-red-400 text-xs mt-2 animate-pulse">// SyntaxError: Missing closing bracket '}'</div>`;
+            list.innerHTML = html; list.scrollTop = list.scrollHeight;
+        };
+
+        app.quitGame = function() { app.currentGame.isPlaying = false; app.changeView('student-dash'); };
+        
+        app.showHelp = function() {
+            if (app.helpTokens <= 0) { Swal.fire({ icon: 'error', title: 'Token Habis!', text: 'Gunakan logikamu sendiri sekarang.' }); return; }
+            Swal.fire({ title: 'Gunakan 1 Token Bantuan?', text: `Sisa token: ${app.helpTokens}`, icon: 'question', showCancelButton: true, confirmButtonColor: '#f59e0b', confirmButtonText: 'Decrypt (Buka)' })
+            .then((r) => {
+                if (r.isConfirmed) { app.helpTokens--; document.getElementById('help-count').innerText = app.helpTokens; Swal.fire({ title: '💡 Source Code', html: `<div class='text-left bg-slate-900 p-4 rounded text-emerald-400 font-mono-tech border border-slate-700'>${app.currentGame.level.solutionHint}</div>` }); }
+            }).catch(err => console.error(err));
+        };
+
+        app.runCode = async function() {
+            try {
+                if (app.currentGame.isPlaying) return;
+                if (app.currentGame.commands.length === 0) { Swal.fire('Error', 'Script kosong!', 'warning'); return; }
+                const btn = document.getElementById('btn-run'); btn.innerHTML = '<i class="fa-solid fa-cog fa-spin"></i> EXECUTING...'; btn.classList.replace('bg-emerald-600', 'bg-amber-500');
+                app.currentGame.isPlaying = true; app.currentGame.pos = { ...app.currentGame.level.start }; app.drawBoard();
+                
+                let cmds = [...app.currentGame.commands]; const lvl = app.currentGame.level; let isCrashed = false, isWin = false;
+                let openB = cmds.filter(c => c.startsWith('BLOCK_')).length, closeB = cmds.filter(c => c === 'END_BLOCK').length;
+                for(let i=0; i < (openB - closeB); i++) cmds.push('END_BLOCK');
+                
+                function buildAST(flat) {
+                    let root = [], stack = [ { body: root, isRoot: true } ];
+                    for (let i=0; i<flat.length; i++) {
+                        let c = flat[i];
+                        if (c.startsWith('BLOCK_')) { let n = { type: c, body: [], id: i }; stack[stack.length - 1].body.push(n); stack.push(n); } 
+                        else if (c === 'END_BLOCK') { if (!stack[stack.length - 1].isRoot) stack.pop(); } 
+                        else stack[stack.length - 1].body.push({ type: 'CMD', val: c, id: i });
+                    } return root;
+                }
+
+                function checkSensorTembok() {
+                    let nx = app.currentGame.pos.x, ny = app.currentGame.pos.y, d = app.currentGame.pos.dir;
+                    if (d===0) ny--; else if (d===1) nx++; else if (d===2) ny++; else if (d===3) nx--;
+                    return (nx<0 || nx>=lvl.grid || ny<0 || ny>=lvl.grid || lvl.obstacles.some(o => o.x===nx && o.y===ny));
+                }
+
+                async function executeTree(nodes) {
+                    for (let node of nodes) {
+                        if (!app.currentGame.isPlaying || isCrashed || isWin) return;
+                        document.querySelectorAll('[id^="cmd-"]').forEach(el => el.classList.remove('bg-slate-700'));
+                        const actEl = document.getElementById(`cmd-${node.id}`); if(actEl) actEl.classList.add('bg-slate-700');
+                        
+                        if (node.type === 'CMD') {
+                            let cmd = node.val;
+                            if (cmd === 'KIRI') app.currentGame.pos.dir = (app.currentGame.pos.dir + 3) % 4;
+                            else if (cmd === 'KANAN') app.currentGame.pos.dir = (app.currentGame.pos.dir + 1) % 4;
+                            else if (cmd === 'MAJU') {
+                                if (checkSensorTembok()) { isCrashed = true; return; } 
+                                if (app.currentGame.pos.dir===0) app.currentGame.pos.y--; else if (app.currentGame.pos.dir===1) app.currentGame.pos.x++; else if (app.currentGame.pos.dir===2) app.currentGame.pos.y++; else app.currentGame.pos.x--;
+                            }
+                            else if (cmd === 'LOMPAT') {
+                                let nx = app.currentGame.pos.x, ny = app.currentGame.pos.y, d = app.currentGame.pos.dir;
+                                if (d===0) ny-=2; else if (d===1) nx+=2; else if (d===2) ny+=2; else nx-=2;
+                                if (nx<0 || nx>=lvl.grid || ny<0 || ny>=lvl.grid || lvl.obstacles.some(o => o.x===nx && o.y===ny)) { isCrashed = true; return; }
+                                app.currentGame.pos.x = nx; app.currentGame.pos.y = ny;
+                            }
+                            app.drawBoard(); if (app.currentGame.pos.x === lvl.target.x && app.currentGame.pos.y === lvl.target.y) { isWin = true; return; }
+                            await new Promise(r => setTimeout(r, 350));
+                        }
+                        else if (node.type.startsWith('BLOCK_FOR_')) { let t = parseInt(node.type.split('_')[2]); for (let i=0; i<t; i++) { if (!app.currentGame.isPlaying || isCrashed || isWin) return; await executeTree(node.body); } }
+                        else if (node.type === 'BLOCK_FOREVER') { while (true) { if (!app.currentGame.isPlaying || isCrashed || isWin) return; await executeTree(node.body); await new Promise(r => setTimeout(r, 50)); } }
+                        else if (node.type === 'BLOCK_WHILE') { let s=0; while (!checkSensorTembok() && s<100) { s++; if (!app.currentGame.isPlaying || isCrashed || isWin) return; await executeTree(node.body); await new Promise(r => setTimeout(r, 50)); } }
+                        else if (node.type === 'BLOCK_IF') { if (checkSensorTembok()) await executeTree(node.body); }
+                    }
+                }
+
+                await executeTree(buildAST(cmds));
+                app.currentGame.isPlaying = false; btn.innerHTML = '<i class="fa-solid fa-play"></i> COMPILE & RUN'; btn.classList.replace('bg-amber-500', 'bg-emerald-600'); app.renderCommands();
+
+                if (isCrashed) { Swal.fire({ icon: 'error', title: 'FATAL ERROR', text: 'Robot menabrak objek padat / keluar map.' }); app.currentGame.pos = { ...app.currentGame.level.start }; app.drawBoard(); } 
+                else if (isWin) {
+                    let score = Math.max(10, 100 - (cmds.length * 5)); const nextLvl = app.levels.find(l => l.id === lvl.id + 1);
+                    Swal.fire({ icon: 'success', title: 'MISSION ACCOMPLISHED', html: `Algoritma valid.<br>Score: <b class="text-amber-400">${score}</b>`, showCancelButton: true, confirmButtonText: nextLvl ? 'Next Level' : 'Finish', cancelButtonText: 'Map' }).then(async (r) => {
+                        try {
+                            Swal.fire({ title: 'Saving data...', didOpen: () => { Swal.showLoading() } }); await requestGAS('saveProgress', { username: app.user.username, level: lvl.id, skor: score }); Swal.close();
+                            if (r.isConfirmed && nextLvl) app.startGame(nextLvl.id); else app.quitGame();
+                        } catch(err) {
+                            console.error(err); Swal.close(); app.quitGame();
+                        }
+                    }).catch(err => console.error(err));
+                } else { Swal.fire({ icon: 'error', title: 'EXECUTION HALTED', text: 'Program selesai namun target tidak tercapai. (Atau terdeteksi Infinite Loop)' }); app.currentGame.pos = { ...app.currentGame.level.start }; app.drawBoard(); }
+            } catch (globalError) {
+                console.error("Execution Engine Error:", globalError);
+                app.currentGame.isPlaying = false;
+                app.currentGame.pos = { ...app.currentGame.level.start }; app.drawBoard(); app.renderCommands();
+                const btn = document.getElementById('btn-run'); if(btn) { btn.innerHTML = '<i class="fa-solid fa-play"></i> COMPILE & RUN'; btn.classList.replace('bg-amber-500', 'bg-emerald-600'); }
+                Swal.fire('Error', 'Sistem eksekusi mendadak berhenti.', 'error');
+            }
+        };
+
+        window.onload = function() { app.renderApp(); };
+    </script>
+</body>
+</html>
