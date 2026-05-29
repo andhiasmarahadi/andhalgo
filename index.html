@@ -790,14 +790,8 @@
                 const btn = document.getElementById('btn-run'); btn.innerHTML = '<i class="fa-solid fa-cog fa-spin"></i> EXECUTING...'; btn.classList.replace('bg-emerald-600', 'bg-amber-500');
                 app.currentGame.isPlaying = true; app.currentGame.pos = { ...app.currentGame.level.start }; app.drawBoard();
                 
-                // Tampilan Mobile: Sembunyikan Palet Perintah agar Papan & Script fokus bersandingan
-                const palette = document.getElementById('command-palette');
-                const isMobile = window.innerWidth < 1024;
-                if (isMobile) {
-                    palette.style.display = 'none';
-                    // Scroll container eksekusi ke paling atas agar terlihat optimal
-                    document.getElementById('game-execution-area').scrollIntoView({behavior: 'smooth', block: 'start'});
-                }
+                // Fokuskan layar ke area eksekusi (board di atas, script di bawah)
+                document.getElementById('game-execution-area').scrollIntoView({behavior: 'smooth', block: 'start'});
 
                 let cmds = [...app.currentGame.commands]; const lvl = app.currentGame.level; let isCrashed = false, isWin = false;
                 let openB = cmds.filter(c => c.startsWith('BLOCK_')).length, closeB = cmds.filter(c => c === 'END_BLOCK').length;
@@ -865,8 +859,6 @@
 
                 await executeTree(buildAST(cmds));
                 
-                // Kembalikan Layout jika eksekusi selesai
-                if (isMobile) palette.style.display = 'block';
                 app.currentGame.isPlaying = false; btn.innerHTML = '<i class="fa-solid fa-play"></i> COMPILE & RUN'; btn.classList.replace('bg-amber-500', 'bg-emerald-600'); app.renderCommands();
 
                 if (isCrashed) { Swal.fire({ icon: 'error', title: 'FATAL ERROR', text: 'Robot menabrak objek padat / keluar map.' }); app.currentGame.pos = { ...app.currentGame.level.start }; app.drawBoard(); } 
@@ -885,7 +877,6 @@
                 } else { Swal.fire({ icon: 'error', title: 'EXECUTION HALTED', text: 'Program selesai namun target tidak tercapai. (Atau terdeteksi Infinite Loop)' }); app.currentGame.pos = { ...app.currentGame.level.start }; app.drawBoard(); }
             } catch (globalError) {
                 console.error("Execution Engine Error:", globalError);
-                if (window.innerWidth < 1024) document.getElementById('command-palette').style.display = 'block';
                 app.currentGame.isPlaying = false;
                 app.currentGame.pos = { ...app.currentGame.level.start }; app.drawBoard(); app.renderCommands();
                 const btn = document.getElementById('btn-run'); if(btn) { btn.innerHTML = '<i class="fa-solid fa-play"></i> COMPILE & RUN'; btn.classList.replace('bg-amber-500', 'bg-emerald-600'); }
