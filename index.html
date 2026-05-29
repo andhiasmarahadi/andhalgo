@@ -39,7 +39,8 @@
             border-color: #334155; 
             box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5); 
         }
-        .robot { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.8)); }
+        /* Penyesuaian Animasi Robot agar lebih mulus */
+        .robot { transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1); filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.8)); }
         
         /* Tema Gelap untuk SweetAlert */
         .swal2-popup { background: #1e293b !important; color: #f8fafc !important; border: 1px solid #334155; }
@@ -51,6 +52,9 @@
         ::-webkit-scrollbar-track { background: #0f172a; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Auto-scroll active script highlight */
+        .script-active { background-color: rgba(51, 65, 85, 0.8) !important; border-left: 3px solid #3b82f6; }
     </style>
 </head>
 <body>
@@ -61,8 +65,10 @@
     </div>
 
     <script>
+        // KONFIGURASI APLIKASI
+        // UBAH IS_PREVIEW KE false JIKA AKAN DI-DEPLOY KE BLOGGER
         const IS_PREVIEW = false; 
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzCrgRUEOQkye6XwaJ5AXPoTLOkWNkGCOgslghXTAbLFmLXDJl7uBH3tPMlIsc6wgtErA/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxpy74GBLquI_S-2dNdRVDxxYaqbv3ruqvgTWxX6eIoCJPHRkInkbO0_fYjqGkIPlkdrQ/exec";
 
         const app = {
             user: null, 
@@ -105,12 +111,20 @@
                 { id: 1, username: 'admin', password: 'edudigital', role: 'guru', nama: 'Andhi Asmara Hadi', kelas: '-', tahun_pelajaran: '-' },
                 { id: 2, username: 'peserta', password: 'edudigital', role: 'siswa', nama: 'Siswa Contoh', kelas: '9A', tahun_pelajaran: '2025/2026' }
             ],
-            dummyProgress: [ { username: 'peserta', level_diselesaikan: 1, skor_diperoleh: 100 } ],
+            dummyProgress: [],
+            dummyProgressInit: false,
             adminData: []
         };
 
         async function requestGAS(action, data) {
+            // Persist dummy data on LocalStorage for preview mode
             if (IS_PREVIEW) {
+                if (!app.dummyProgressInit) {
+                    const stored = localStorage.getItem('andhalgo_dummy_prog');
+                    if (stored) app.dummyProgress = JSON.parse(stored);
+                    app.dummyProgressInit = true;
+                }
+                
                 return new Promise(resolve => {
                     setTimeout(() => {
                         let res = { status: 'error', message: 'Action not found' };
@@ -123,8 +137,8 @@
                             else if (action === 'getStudentStats') {
                                 const stats = app.dummyUsers.filter(u => u.role === 'siswa').map(u => {
                                     const prog = app.dummyProgress.filter(p => p.username === u.username);
-                                    const maxLevel = prog.length > 0 ? Math.max(...prog.map(p => p.level_diselesaikan)) : 0;
-                                    const totalScore = prog.reduce((sum, p) => sum + p.skor_diperoleh, 0);
+                                    const maxLevel = prog.length > 0 ? Math.max(...prog.map(p => parseInt(p.level_diselesaikan))) : 0;
+                                    const totalScore = prog.reduce((sum, p) => sum + parseInt(p.skor_diperoleh), 0);
                                     const detailSkor = {};
                                     prog.forEach(p => detailSkor[p.level_diselesaikan] = p.skor_diperoleh);
                                     return { username: u.username, nama: u.nama, kelas: u.kelas, tahun_pelajaran: u.tahun_pelajaran || '2025/2026', maxLevel, totalScore, detailSkor };
@@ -144,18 +158,20 @@
                                 res = { status: 'success', data: prog };
                             }
                             else if (action === 'saveProgress') {
-                                const existingIdx = app.dummyProgress.findIndex(p => p.username === data.username && p.level_diselesaikan === data.level);
+                                const existingIdx = app.dummyProgress.findIndex(p => p.username === data.username && parseInt(p.level_diselesaikan) === parseInt(data.level));
                                 if (existingIdx >= 0) {
-                                    if (data.skor > app.dummyProgress[existingIdx].skor_diperoleh) {
+                                    if (parseInt(data.skor) > parseInt(app.dummyProgress[existingIdx].skor_diperoleh)) {
                                         app.dummyProgress[existingIdx].skor_diperoleh = data.skor; 
                                     }
                                 } else {
                                     app.dummyProgress.push({ username: data.username, level_diselesaikan: data.level, skor_diperoleh: data.skor });
                                 }
+                                localStorage.setItem('andhalgo_dummy_prog', JSON.stringify(app.dummyProgress)); // Save to memory
                                 res = { status: 'success', message: 'Progress disimpan.' };
                             }
                             else if (action === 'resetProgress') {
                                 app.dummyProgress = app.dummyProgress.filter(p => p.username !== data.username);
+                                localStorage.setItem('andhalgo_dummy_prog', JSON.stringify(app.dummyProgress)); // Save memory
                                 res = { status: 'success', message: 'Progres direset' };
                             }
                         } catch(err) {
@@ -220,33 +236,37 @@
 
         function renderLogin(container) {
             container.innerHTML = `
-            <div class="max-w-md mx-auto glass-panel rounded-2xl overflow-hidden mt-16 transform transition-all hover:scale-[1.01]">
-                <div class="p-8 text-center relative overflow-hidden">
-                    <div class="absolute inset-0 bg-gradient-to-b from-blue-900/50 to-transparent"></div>
-                    <img src="https://i.imghippo.com/files/SYf1057aMI.png" class="h-24 mx-auto mb-4 relative z-10 drop-shadow-[0_0_15px_rgba(59,130,246,0.8)] transition transform hover:scale-110" alt="Andhalgo Logo" onerror="this.style.display='none'">
-                    <p class="text-blue-200 text-sm mt-2 relative z-10 font-mono-tech tracking-widest uppercase">System Login Protocol</p>
+            <div class="max-w-[550px] mx-auto mt-6 relative flex items-center justify-center aspect-square sm:min-h-[550px]">
+                <!-- Frame Gambar Background -->
+                <div class="absolute inset-0 z-0 flex justify-center items-center pointer-events-none">
+                    <!-- PENTING: Ganti URL di bawah ini dengan URL gambar frame Anda -->
+                    <img src="https://i.imghippo.com/files/qutu6207KCw.png" class="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(59,130,246,0.2)] transform scale-110 sm:scale-100" alt="Andhalgo Frame" onerror="this.src='https://placehold.co/500x500/1e293b/ffffff?text=MASUKKAN+URL+GAMBAR+FRAME'">
                 </div>
-                <div class="p-8 pt-0">
-                    <form id="login-form" class="space-y-5">
+
+                <!-- Form Login (Diposisikan pas di tengah area putih frame) -->
+                <div class="relative z-10 w-[60%] sm:w-[50%] pb-4 sm:pb-8 ml-2 sm:ml-4 flex flex-col justify-center">
+                    <div class="text-center mb-4 sm:mb-6">
+                        <h2 class="text-slate-800 font-black text-2xl sm:text-3xl tracking-tight drop-shadow-sm">ANDHALGO</h2>
+                        <p class="text-blue-600 font-bold text-[10px] sm:text-xs font-mono-tech tracking-widest uppercase mt-1">System Login</p>
+                    </div>
+                    
+                    <form id="login-form" class="space-y-3 sm:space-y-4">
                         <div>
-                            <div class="mt-1 relative rounded-lg shadow-sm">
-                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i class="fa-solid fa-terminal text-blue-400"></i></div>
-                                <input type="text" id="login-username" required class="w-full pl-12 p-3 bg-slate-800/80 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 text-white outline-none placeholder-slate-400 transition" placeholder="Username / ID">
+                            <div class="relative rounded-lg shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa-solid fa-terminal text-blue-500"></i></div>
+                                <input type="text" id="login-username" required class="w-full pl-9 p-2 sm:p-2.5 bg-white/90 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 outline-none placeholder-slate-400 transition text-xs sm:text-sm font-bold shadow-inner" placeholder="Username / ID">
                             </div>
                         </div>
                         <div>
-                            <div class="mt-1 relative rounded-lg shadow-sm">
-                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i class="fa-solid fa-lock text-blue-400"></i></div>
-                                <input type="password" id="login-password" required class="w-full pl-12 p-3 bg-slate-800/80 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 text-white outline-none placeholder-slate-400 transition" placeholder="Password Access">
+                            <div class="relative rounded-lg shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa-solid fa-lock text-blue-500"></i></div>
+                                <input type="password" id="login-password" required class="w-full pl-9 p-2 sm:p-2.5 bg-white/90 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 outline-none placeholder-slate-400 transition text-xs sm:text-sm font-bold shadow-inner" placeholder="Password Access">
                             </div>
                         </div>
-                        <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-4 rounded-xl shadow-[0_0_15px_rgba(79,70,229,0.5)] transition flex justify-center items-center gap-2">
-                            <i class="fa-solid fa-rocket"></i> INITIALIZE
+                        <button type="submit" class="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-2.5 sm:py-3 px-4 rounded-xl shadow-[0_8px_15px_rgba(79,70,229,0.3)] hover:shadow-[0_10px_20px_rgba(79,70,229,0.5)] transition-all transform hover:-translate-y-0.5 flex justify-center items-center gap-2 text-sm">
+                            <i class="fa-solid fa-rocket"></i> MASUK
                         </button>
                     </form>
-                    <div class="mt-8 text-center text-xs text-slate-500 font-mono-tech border-t border-slate-700/50 pt-4">
-                        // Akses Terbatas<br>Hanya untuk siswa yang telah didaftarkan oleh Guru.
-                    </div>
                 </div>
             </div>
             `;
@@ -275,14 +295,15 @@
             try {
                 const res = await requestGAS('getStudentProgress', { username: app.user.username });
                 const progress = res.status === 'success' ? res.data : [];
-                const maxLevelCleared = progress.length > 0 ? Math.max(...progress.map(p => p.level_diselesaikan)) : 0;
-                const totalScore = progress.reduce((sum, p) => sum + p.skor_diperoleh, 0);
+                // Perbaikan parse Integer
+                const maxLevelCleared = progress.length > 0 ? Math.max(...progress.map(p => parseInt(p.level_diselesaikan))) : 0;
+                const totalScore = progress.reduce((sum, p) => sum + parseInt(p.skor_diperoleh), 0);
 
                 let levelsHtml = '';
                 app.levels.forEach((lvl, index) => {
                     const isUnlocked = index === 0 || lvl.id <= maxLevelCleared + 1;
                     const isCleared = lvl.id <= maxLevelCleared;
-                    const progData = progress.find(p => p.level_diselesaikan === lvl.id);
+                    const progData = progress.find(p => parseInt(p.level_diselesaikan) === lvl.id);
                     const score = progData ? progData.skor_diperoleh : 0;
                     
                     const bgClass = isUnlocked ? (isCleared ? 'bg-emerald-900/40 border-emerald-500/50' : 'glass-panel border-blue-400/50') : 'bg-slate-800/30 border-slate-700/50 opacity-50 grayscale';
@@ -497,9 +518,22 @@
             reader.readAsArrayBuffer(file); event.target.value = ''; 
         };
 
+        // Perbaikan: PDF dicetak 100% menggunakan data yang terfilter, bukan clone element yang berpotensi error.
         app.printPDF = function() {
-            const tableElement = document.getElementById('report-table');
-            if(!tableElement) return;
+            const fKelas = document.getElementById('filter-kelas').value;
+            const fTahun = document.getElementById('filter-tahun').value;
+
+            // Re-filter data berdasarkan kondisi saat tombol ditekan
+            let filteredData = app.adminData.filter(s => {
+                const matchKelas = fKelas === 'ALL' || s.kelas === fKelas;
+                const matchTahun = fTahun === 'ALL' || s.tahun_pelajaran === fTahun;
+                return matchKelas && matchTahun;
+            });
+
+            if(filteredData.length === 0) {
+                Swal.fire('Informasi', 'Tidak ada data untuk dicetak dengan filter ini.', 'info');
+                return;
+            }
 
             Swal.fire({ title: 'Menyiapkan PDF...', text: 'Membangun layout', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
             
@@ -509,26 +543,57 @@
             printContainer.style.width = '1122px'; printContainer.style.backgroundColor = '#ffffff';
             printContainer.style.padding = '40px'; printContainer.style.fontFamily = 'Arial, sans-serif';
 
-            // PENTING: Gambar Placeholder yang Valid (Untuk mencegah Unhandled Rejection). 
-            // Ganti URL `https://placehold.co/...` dengan Base64 atau URL gambar Blogger Anda.
             const headerDiv = document.createElement('div');
             headerDiv.style.textAlign = 'center'; headerDiv.style.marginBottom = '30px';
             headerDiv.innerHTML = `
                 <img src='https://placehold.co/800x200/ffffff/1e3a8a?text=GANTI+DENGAN+GAMBAR+KOP+ANDA' style='max-width: 100%; height: auto; max-height: 150px; object-fit: contain; margin: 0 auto; display: block;' onerror='this.style.display="none"'>
                 <div style='margin-top: 15px; border-bottom: 2px solid #cbd5e1; width: 100%;'></div>
+                <h2 style="color: #0f172a; margin-top: 20px;">Laporan Progres Belajar Algoritma (ANDHALGO)</h2>
+                <p style="color: #475569; font-size: 14px;">Filter - Kelas: ${fKelas} | Tahun: ${fTahun}</p>
             `;
             printContainer.appendChild(headerDiv);
             
-            const clonedTable = tableElement.cloneNode(true);
-            clonedTable.style.width = '100%'; clonedTable.style.borderCollapse = 'collapse';
-            
-            const aksiHeader = clonedTable.querySelector('th[data-html2canvas-ignore="true"]');
-            if(aksiHeader) aksiHeader.remove();
-            clonedTable.querySelectorAll('tbody tr').forEach(row => { if(row.children.length > 1) row.removeChild(row.lastElementChild); });
+            // Build tabel secara manual untuk PDF
+            let levelHeaders = '';
+            for(let i = 1; i <= 10; i++) levelHeaders += `<th style="padding:10px; border:1px solid #94a3b8; text-align:center; background-color:#e2e8f0; color:#1e293b;">L${i}</th>`;
 
-            clonedTable.querySelectorAll('th, td').forEach(cell => { cell.style.border = '1px solid #94a3b8'; cell.style.padding = '12px 8px'; cell.style.fontSize = '12px'; cell.style.color = '#000000'; });
-            clonedTable.querySelectorAll('th').forEach(th => { th.style.backgroundColor = '#e2e8f0'; th.style.fontWeight = 'bold'; th.style.color = '#1e293b'; });
-            printContainer.appendChild(clonedTable);
+            let tableRows = '';
+            filteredData.sort((a,b) => b.totalScore - a.totalScore).forEach((s, idx) => {
+                let levelScoresHtml = '';
+                for(let i = 1; i <= 10; i++) {
+                    const score = s.detailSkor && s.detailSkor[i] ? s.detailSkor[i] : '-';
+                    levelScoresHtml += `<td style="padding:10px; border:1px solid #94a3b8; text-align:center; color:#000;">${score}</td>`;
+                }
+                tableRows += `
+                <tr>
+                    <td style="padding:10px; border:1px solid #94a3b8; text-align:center; color:#000;">${idx + 1}</td>
+                    <td style="padding:10px; border:1px solid #94a3b8; color:#000; font-weight:600;">${s.nama}</td>
+                    <td style="padding:10px; border:1px solid #94a3b8; text-align:center; color:#000;">${s.kelas}</td>
+                    <td style="padding:10px; border:1px solid #94a3b8; text-align:center; color:#000;">${s.tahun_pelajaran}</td>
+                    ${levelScoresHtml}
+                    <td style="padding:10px; border:1px solid #94a3b8; text-align:center; font-weight:bold; color:#000;">${s.totalScore}</td>
+                </tr>`;
+            });
+
+            const tableHtml = `
+                <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                    <thead>
+                        <tr>
+                            <th style="padding:10px; border:1px solid #94a3b8; text-align:center; background-color:#e2e8f0; color:#1e293b;">No</th>
+                            <th style="padding:10px; border:1px solid #94a3b8; text-align:left; background-color:#e2e8f0; color:#1e293b;">Nama Siswa</th>
+                            <th style="padding:10px; border:1px solid #94a3b8; text-align:center; background-color:#e2e8f0; color:#1e293b;">Kelas</th>
+                            <th style="padding:10px; border:1px solid #94a3b8; text-align:center; background-color:#e2e8f0; color:#1e293b;">Tahun</th>
+                            ${levelHeaders}
+                            <th style="padding:10px; border:1px solid #94a3b8; text-align:center; background-color:#e2e8f0; color:#1e293b;">Total Skor</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+            `;
+            
+            const tableDiv = document.createElement('div');
+            tableDiv.innerHTML = tableHtml;
+            printContainer.appendChild(tableDiv);
 
             const today = new Date(); const dateStr = today.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             const docFooter = document.createElement('div');
@@ -539,16 +604,15 @@
             document.body.appendChild(printContainer);
 
             setTimeout(() => {
-                const opt = { margin: [0, 0, 0, 0], filename: 'Laporan_Nilai_ANDHALGO.pdf', image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2, backgroundColor: '#ffffff', useCORS: true }, jsPDF: { unit: 'pt', format: 'a4', orientation: 'landscape' } };
+                const opt = { margin: [0.5, 0.5, 0.5, 0.5], filename: `Laporan_ANDHALGO_${fKelas}_${fTahun}.pdf`, image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2, backgroundColor: '#ffffff', useCORS: true }, jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' } };
                 
-                // Pelindung Promise PDF (Mencegah UnhandledRejection)
                 html2pdf().set(opt).from(printContainer).save().then(() => { 
                     if(document.body.contains(printContainer)) document.body.removeChild(printContainer); 
                     Swal.close(); 
                 }).catch(err => {
                     console.error("PDF Engine Error:", err);
                     if(document.body.contains(printContainer)) document.body.removeChild(printContainer);
-                    Swal.fire('Error', 'Gagal mencetak PDF. Pastikan gambar KOP bisa dimuat (CORS/URL Valid).', 'error');
+                    Swal.fire('Error', 'Gagal mencetak PDF.', 'error');
                 });
             }, 1000); 
         };
@@ -577,14 +641,20 @@
                 </div>
             </div>
 
-            <div class="flex flex-col lg:flex-row gap-6">
-                <div class="flex-1 glass-panel p-8 rounded-3xl flex flex-col items-center justify-center min-h-[450px] relative overflow-hidden">
+            <!-- Perbaikan UI Mobile / Fokus Eksekusi -->
+            <div class="flex flex-col lg:flex-row gap-6" id="game-execution-area">
+                
+                <!-- Area Robot (Papan Permainan) -->
+                <div class="w-full lg:w-3/5 glass-panel p-4 rounded-3xl flex flex-col items-center justify-center min-h-[350px] relative overflow-hidden" id="board-container">
                     <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-900/50 to-transparent"></div>
                     <div id="game-board" class="relative bg-slate-900 p-2 rounded-xl border border-slate-700 shadow-[0_0_30px_rgba(0,0,0,0.5)] z-10"></div>
                 </div>
 
-                <div class="w-full lg:w-[420px] flex flex-col gap-4">
-                    <div class="glass-panel rounded-2xl p-5 border-t-4 border-t-emerald-500">
+                <!-- Area Kontrol & Script -->
+                <div class="w-full lg:w-2/5 flex flex-col gap-4">
+                    
+                    <!-- Palet Perintah (Akan disembunyikan di HP saat kode dieksekusi agar fokus) -->
+                    <div id="command-palette" class="glass-panel rounded-2xl p-5 border-t-4 border-t-emerald-500 transition-all duration-300">
                         <h3 class="font-bold text-white mb-3 text-sm font-mono-tech"><i class="fa-solid fa-microchip text-emerald-400 mr-2"></i>M.O.V.E PROTOCOL</h3>
                         <div class="grid grid-cols-2 gap-2 mb-4">
                             <button onclick="app.addCommand('MAJU')" class="bg-slate-800 hover:bg-blue-600 text-slate-200 hover:text-white p-3 rounded-lg border border-slate-600 hover:border-blue-400 text-xs font-bold transition flex flex-col items-center gap-2"><i class="fa-solid fa-arrow-up text-lg"></i> Forward (Maju)</button>
@@ -603,15 +673,17 @@
                         <button onclick="app.addCommand('END_BLOCK')" class="w-full bg-slate-900 text-slate-500 p-2.5 rounded-lg border border-slate-700 border-dashed text-xs font-bold hover:text-slate-300 hover:border-slate-500 transition flex justify-center items-center gap-2 mt-1"><i class="fa-solid fa-level-up-alt"></i> } TUTUP BLOK</button>
                     </div>
                     
-                    <div class="glass-panel p-5 rounded-2xl flex-1 flex flex-col border border-slate-700">
+                    <!-- Script Window -->
+                    <div class="glass-panel p-4 rounded-2xl flex-1 flex flex-col border border-slate-700 min-h-[250px]">
                         <div class="flex justify-between items-center mb-3">
                             <h3 class="font-bold text-blue-300 font-mono-tech flex items-center gap-2"><i class="fa-solid fa-terminal"></i> script.js 
                                 <span id="block-counter" class="text-[10px] bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30 ml-2">0/Max</span>
                             </h3>
                             <button onclick="app.clearCommands()" class="text-red-400 hover:text-red-300 text-xs font-bold transition"><i class="fa-solid fa-trash-can"></i> Clear</button>
                         </div>
-                        <div id="command-list" class="flex-1 bg-slate-950 rounded-xl border border-slate-800 p-3 overflow-y-auto max-h-[250px] flex flex-col gap-1.5 font-mono-tech text-sm shadow-inner"></div>
-                        <button onclick="app.runCode()" id="btn-run" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.4)] transition flex items-center justify-center gap-2 text-lg">
+                        <!-- Container dengan scroll smooth -->
+                        <div id="command-list" class="flex-1 bg-slate-950 rounded-xl border border-slate-800 p-3 overflow-y-auto max-h-[300px] flex flex-col gap-1.5 font-mono-tech text-sm shadow-inner scroll-smooth"></div>
+                        <button onclick="app.runCode()" id="btn-run" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.4)] transition flex items-center justify-center gap-2 text-lg relative z-20">
                             <i class="fa-solid fa-play"></i> COMPILE & RUN
                         </button>
                     </div>
@@ -643,6 +715,12 @@
             if (app.currentGame.commands.length >= max) { Swal.fire({ icon: 'warning', title: 'Memory Full!', text: `Hanya diizinkan ${max} baris kode. Gunakan Loop!`}); return; }
             if (cmd === 'END_BLOCK' && app.currentGame.commands.filter(c => c.startsWith('BLOCK_')).length <= app.currentGame.commands.filter(c => c === 'END_BLOCK').length) { Swal.fire({icon: 'info', title: 'Oops!', text: 'Tidak ada blok yang terbuka.'}); return; }
             app.currentGame.commands.push(cmd); app.renderCommands();
+            
+            // Auto scroll ke paling bawah saat tambah kode
+            setTimeout(() => {
+                const cl = document.getElementById('command-list');
+                if(cl) cl.scrollTop = cl.scrollHeight;
+            }, 50);
         };
 
         app.clearCommands = function() { if (app.currentGame.isPlaying) return; app.currentGame.commands = []; app.currentGame.pos = { ...app.currentGame.level.start }; app.drawBoard(); app.renderCommands(); };
@@ -674,14 +752,15 @@
                 else if (cmd.startsWith('BLOCK_FOR_')) { text = `for (i=0; i<${cmd.split('_')[2]}; i++) {`; color = 'text-emerald-400'; }
                 
                 html += `
-                <div class="flex items-center justify-between group hover:bg-slate-800/50 p-1 rounded" style="padding-left: ${mLeft}px" id="cmd-${idx}">
-                    <div class="flex gap-3"><span class="text-slate-600 select-none w-4 text-right">${idx+1}</span><span class="${color}">${text}</span></div>
+                <div class="flex items-center justify-between group p-1.5 rounded transition-colors" style="padding-left: ${mLeft}px" id="cmd-${idx}">
+                    <div class="flex gap-3"><span class="text-slate-600 select-none w-4 text-right font-bold">${idx+1}</span><span class="${color}">${text}</span></div>
                     <button onclick="app.removeCommand(${idx})" class="text-red-500/0 group-hover:text-red-400 transition"><i class="fa-solid fa-xmark"></i></button>
                 </div>`;
                 if (cmd.startsWith('BLOCK_')) indent++;
             });
             if (indent > 0) html += `<div class="text-red-400 text-xs mt-2 animate-pulse">// SyntaxError: Missing closing bracket '}'</div>`;
-            list.innerHTML = html; list.scrollTop = list.scrollHeight;
+            list.innerHTML = html;
+            // Removed direct scrollTop here to avoid breaking during execution highlighting
         };
 
         app.quitGame = function() { app.currentGame.isPlaying = false; app.changeView('student-dash'); };
@@ -701,6 +780,15 @@
                 const btn = document.getElementById('btn-run'); btn.innerHTML = '<i class="fa-solid fa-cog fa-spin"></i> EXECUTING...'; btn.classList.replace('bg-emerald-600', 'bg-amber-500');
                 app.currentGame.isPlaying = true; app.currentGame.pos = { ...app.currentGame.level.start }; app.drawBoard();
                 
+                // Tampilan Mobile: Sembunyikan Palet Perintah agar Papan & Script fokus bersandingan
+                const palette = document.getElementById('command-palette');
+                const isMobile = window.innerWidth < 1024;
+                if (isMobile) {
+                    palette.style.display = 'none';
+                    // Scroll container eksekusi ke paling atas agar terlihat optimal
+                    document.getElementById('game-execution-area').scrollIntoView({behavior: 'smooth', block: 'start'});
+                }
+
                 let cmds = [...app.currentGame.commands]; const lvl = app.currentGame.level; let isCrashed = false, isWin = false;
                 let openB = cmds.filter(c => c.startsWith('BLOCK_')).length, closeB = cmds.filter(c => c === 'END_BLOCK').length;
                 for(let i=0; i < (openB - closeB); i++) cmds.push('END_BLOCK');
@@ -724,8 +812,19 @@
                 async function executeTree(nodes) {
                     for (let node of nodes) {
                         if (!app.currentGame.isPlaying || isCrashed || isWin) return;
-                        document.querySelectorAll('[id^="cmd-"]').forEach(el => el.classList.remove('bg-slate-700'));
-                        const actEl = document.getElementById(`cmd-${node.id}`); if(actEl) actEl.classList.add('bg-slate-700');
+                        
+                        // Hapus sorotan (highlight) sebelumnya
+                        document.querySelectorAll('[id^="cmd-"]').forEach(el => {
+                            el.classList.remove('script-active');
+                        });
+                        
+                        // Tambahkan sorotan dan Auto-Scroll pada perintah yang sedang dieksekusi
+                        const actEl = document.getElementById(`cmd-${node.id}`); 
+                        if(actEl) {
+                            actEl.classList.add('script-active');
+                            // Bawa elemen script ke area yang terlihat secara otomatis
+                            actEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
                         
                         if (node.type === 'CMD') {
                             let cmd = node.val;
@@ -741,8 +840,11 @@
                                 if (nx<0 || nx>=lvl.grid || ny<0 || ny>=lvl.grid || lvl.obstacles.some(o => o.x===nx && o.y===ny)) { isCrashed = true; return; }
                                 app.currentGame.pos.x = nx; app.currentGame.pos.y = ny;
                             }
-                            app.drawBoard(); if (app.currentGame.pos.x === lvl.target.x && app.currentGame.pos.y === lvl.target.y) { isWin = true; return; }
-                            await new Promise(r => setTimeout(r, 350));
+                            app.drawBoard(); 
+                            if (app.currentGame.pos.x === lvl.target.x && app.currentGame.pos.y === lvl.target.y) { isWin = true; return; }
+                            
+                            // Waktu tunggu disinkronkan dengan durasi animasi robot
+                            await new Promise(r => setTimeout(r, 450));
                         }
                         else if (node.type.startsWith('BLOCK_FOR_')) { let t = parseInt(node.type.split('_')[2]); for (let i=0; i<t; i++) { if (!app.currentGame.isPlaying || isCrashed || isWin) return; await executeTree(node.body); } }
                         else if (node.type === 'BLOCK_FOREVER') { while (true) { if (!app.currentGame.isPlaying || isCrashed || isWin) return; await executeTree(node.body); await new Promise(r => setTimeout(r, 50)); } }
@@ -752,6 +854,9 @@
                 }
 
                 await executeTree(buildAST(cmds));
+                
+                // Kembalikan Layout jika eksekusi selesai
+                if (isMobile) palette.style.display = 'block';
                 app.currentGame.isPlaying = false; btn.innerHTML = '<i class="fa-solid fa-play"></i> COMPILE & RUN'; btn.classList.replace('bg-amber-500', 'bg-emerald-600'); app.renderCommands();
 
                 if (isCrashed) { Swal.fire({ icon: 'error', title: 'FATAL ERROR', text: 'Robot menabrak objek padat / keluar map.' }); app.currentGame.pos = { ...app.currentGame.level.start }; app.drawBoard(); } 
@@ -759,7 +864,9 @@
                     let score = Math.max(10, 100 - (cmds.length * 5)); const nextLvl = app.levels.find(l => l.id === lvl.id + 1);
                     Swal.fire({ icon: 'success', title: 'MISSION ACCOMPLISHED', html: `Algoritma valid.<br>Score: <b class="text-amber-400">${score}</b>`, showCancelButton: true, confirmButtonText: nextLvl ? 'Next Level' : 'Finish', cancelButtonText: 'Map' }).then(async (r) => {
                         try {
-                            Swal.fire({ title: 'Saving data...', didOpen: () => { Swal.showLoading() } }); await requestGAS('saveProgress', { username: app.user.username, level: lvl.id, skor: score }); Swal.close();
+                            Swal.fire({ title: 'Saving data...', didOpen: () => { Swal.showLoading() } }); 
+                            await requestGAS('saveProgress', { username: app.user.username, level: lvl.id, skor: score }); 
+                            Swal.close();
                             if (r.isConfirmed && nextLvl) app.startGame(nextLvl.id); else app.quitGame();
                         } catch(err) {
                             console.error(err); Swal.close(); app.quitGame();
@@ -768,6 +875,7 @@
                 } else { Swal.fire({ icon: 'error', title: 'EXECUTION HALTED', text: 'Program selesai namun target tidak tercapai. (Atau terdeteksi Infinite Loop)' }); app.currentGame.pos = { ...app.currentGame.level.start }; app.drawBoard(); }
             } catch (globalError) {
                 console.error("Execution Engine Error:", globalError);
+                if (window.innerWidth < 1024) document.getElementById('command-palette').style.display = 'block';
                 app.currentGame.isPlaying = false;
                 app.currentGame.pos = { ...app.currentGame.level.start }; app.drawBoard(); app.renderCommands();
                 const btn = document.getElementById('btn-run'); if(btn) { btn.innerHTML = '<i class="fa-solid fa-play"></i> COMPILE & RUN'; btn.classList.replace('bg-amber-500', 'bg-emerald-600'); }
