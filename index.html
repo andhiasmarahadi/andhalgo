@@ -231,6 +231,21 @@
     </footer>
 
     <!-- ==================== MODALS ==================== -->
+    <div id="welcome-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[10000] hidden flex items-center justify-center px-4 backdrop-blur-sm fade-in">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl">
+            <div class="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-rocket text-4xl text-primary"></i>
+            </div>
+            <h2 class="text-2xl font-extrabold text-dark mb-4">Info Aplikasi</h2>
+            <p class="text-gray-600 mb-8 leading-relaxed text-sm">
+                Selamat Datang di Aplikasi ANDHALGO. Aplikasi ini merupakan aplikasi yang dapat membantu kalian dalam memahami logika dan algoritma dalam pemrograman secara lebih menyenangkan. Disini kalian akan diajak untuk menyelesaikan beberapa level Logika tentang Pemrograman. Selamat Berpetualang :)
+            </p>
+            <button onclick="UI.closeWelcomeModal()" class="w-full bg-primary text-white font-bold py-3 rounded-xl shadow-md hover:bg-indigo-600 transition text-sm">
+                OK
+            </button>
+        </div>
+    </div>
+
     <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[10000] hidden flex items-center justify-center px-4 backdrop-blur-sm fade-in">
         <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl transform transition-transform scale-95">
             <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -404,7 +419,8 @@
         const UI = {
             views: ['login', 'peserta', 'admin'],
             showView: (viewId) => { UI.views.forEach(v => document.getElementById(`view-${v}`).classList.add('hidden')); document.getElementById(`view-${viewId}`).classList.remove('hidden'); document.getElementById(`view-${viewId}`).classList.add('flex'); document.getElementById('user-menu').classList.toggle('hidden', viewId === 'login'); },
-            showStudentMap: () => { document.getElementById('peserta-game').classList.add('hidden'); document.getElementById('peserta-map').classList.remove('hidden'); StudentUI.renderMap(); }
+            showStudentMap: () => { document.getElementById('peserta-game').classList.add('hidden'); document.getElementById('peserta-map').classList.remove('hidden'); StudentUI.renderMap(); },
+            closeWelcomeModal: () => { document.getElementById('welcome-modal').classList.add('hidden'); }
         };
 
         const Auth = {
@@ -867,7 +883,12 @@
             }
         };
 
-        const App = { init: () => { UI.showView('login'); } };
+        const App = { 
+            init: () => { 
+                UI.showView('login'); 
+                document.getElementById('welcome-modal').classList.remove('hidden');
+            } 
+        };
         window.onload = App.init;
     </script>
 </body>
