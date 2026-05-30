@@ -30,21 +30,17 @@
         .fade-in { animation: fadeIn 0.4s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Logo Styles */
         .logo-block { background: linear-gradient(135deg, #4F46E5, #8B5CF6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        /* Game Grid Styles */
         .grid-cell { transition: all 0.2s; }
         .grid-cell.active { transform: scale(0.95); box-shadow: inset 0 0 10px rgba(0,0,0,0.1); }
         .robot { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         
-        /* Block Command Styles */
         .cmd-block { cursor: grab; transition: transform 0.1s; }
         .cmd-block:active { cursor: grabbing; transform: scale(0.98); }
         .cmd-block.dragging { opacity: 0.5; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         .cmd-block.running { border: 2px solid #F59E0B; box-shadow: 0 0 10px #F59E0B; }
         
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
@@ -83,6 +79,7 @@
 
     <main class="flex-grow flex flex-col overflow-y-auto relative">
         
+        <!-- View: Login -->
         <div id="view-login" class="flex-grow flex flex-col items-center justify-center bg-gray-50 p-4 w-full">
             <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md fade-in text-center border border-gray-100 mt-8 mb-8">
                 <div class="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform -rotate-6 mx-auto mb-6">
@@ -107,7 +104,9 @@
             </div>
         </div>
 
+        <!-- View: Peserta (Map & Game) -->
         <div id="view-peserta" class="hidden flex-grow flex-col bg-gray-50">
+            <!-- Peta Level -->
             <div id="peserta-map" class="flex-grow p-4 md:p-8 overflow-y-auto fade-in">
                 <div class="max-w-4xl mx-auto">
                     <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8 flex justify-between items-center">
@@ -126,6 +125,7 @@
                 </div>
             </div>
 
+            <!-- Area Permainan -->
             <div id="peserta-game" class="hidden flex-grow flex flex-col fade-in relative h-full">
                 <div class="bg-white border-b px-4 py-3 flex justify-between items-center shadow-sm z-10 shrink-0">
                     <button onclick="UI.showStudentMap()" class="text-gray-600 hover:text-primary font-bold"><i class="fas fa-arrow-left mr-2"></i> Kembali</button>
@@ -164,6 +164,7 @@
             </div>
         </div>
 
+        <!-- View: Admin Dashboard -->
         <div id="view-admin" class="hidden flex-grow bg-gray-50 overflow-y-auto p-4 md:p-8 fade-in">
             <div class="max-w-6xl mx-auto">
                 <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -183,13 +184,13 @@
                         <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl"><i class="fas fa-users"></i></div>
                         <div><p class="text-gray-500 text-sm font-semibold">Total Siswa</p><h3 id="admin-stat-siswa" class="text-2xl font-bold text-dark">0</h3></div>
                     </div>
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+                    <div onclick="Admin.sortBy('level')" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 cursor-pointer hover:border-primary transition">
                         <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xl"><i class="fas fa-map"></i></div>
-                        <div><p class="text-gray-500 text-sm font-semibold">Max Level Dicapai</p><h3 id="admin-stat-level" class="text-2xl font-bold text-dark">0</h3></div>
+                        <div><p class="text-gray-500 text-sm font-semibold">Max Level Dicapai <i class="fas fa-sort text-xs ml-1 text-gray-400"></i></p><h3 id="admin-stat-level" class="text-2xl font-bold text-dark">0</h3></div>
                     </div>
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+                    <div onclick="Admin.sortBy('skor')" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 cursor-pointer hover:border-primary transition">
                         <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 text-xl"><i class="fas fa-trophy"></i></div>
-                        <div><p class="text-gray-500 text-sm font-semibold">Skor Tertinggi</p><h3 id="admin-stat-skor" class="text-2xl font-bold text-dark">0</h3></div>
+                        <div><p class="text-gray-500 text-sm font-semibold">Skor Tertinggi <i class="fas fa-sort text-xs ml-1 text-gray-400"></i></p><h3 id="admin-stat-skor" class="text-2xl font-bold text-dark">0</h3></div>
                     </div>
                 </div>
 
@@ -243,7 +244,6 @@
                     <span class="text-sm font-bold text-gray-600">Skor Kode:</span>
                     <span id="level-score-earned" class="text-xl font-bold text-success">+100</span>
                 </div>
-                <!-- Menambahkan info Skor Keseluruhan -->
                 <div class="flex justify-between items-center mb-2 pt-2 border-t border-gray-200">
                     <span class="text-sm font-bold text-gray-600">Total Skor:</span>
                     <span id="level-total-score" class="text-xl font-bold text-primary">0</span>
@@ -254,7 +254,6 @@
                 <p id="score-note" class="text-xs text-gray-500 mt-2 text-left">Sangat efisien!</p>
             </div>
             
-            <!-- Mengganti tombol tunggal menjadi 2 tombol pilihan -->
             <div class="flex gap-2">
                 <button onclick="Game.backToMap()" class="w-1/3 bg-gray-200 text-gray-700 font-bold py-3 rounded-xl shadow-sm hover:bg-gray-300 transition text-sm">Kembali</button>
                 <button onclick="Game.playNextLevel()" class="w-2/3 bg-primary text-white font-bold py-3 rounded-xl shadow-md hover:bg-indigo-600 transition text-sm">Lanjut Level <i class="fas fa-arrow-right ml-1"></i></button>
@@ -345,38 +344,41 @@
         // ===================================================================
         // KONFIGURASI APLIKASI UTAMA
         // ===================================================================
+        // UBAH IS_PREVIEW KE false JIKA AKAN DI-DEPLOY KE BLOGGER
         const IS_PREVIEW = false; 
         
         // PASTIKAN GAS_URL INI SUDAH DI-DEPLOY SEBAGAI 'ANYONE'
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbz5XqippWzhLHgJmX5q0kxI2QHABfnLp4A5zwwMjYR9P6NGo_YK7-wFwA20bOL6f65qxQ/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyPaPoig7cDkMxjH59B3CXsZvAZ6gkGj69wL30YACUoY9Xh8krCivHTBEjOvvTEkrQwsw/exec";
         // ===================================================================
 
+        // DATA LEVEL YANG SUDAH DIPERBAIKI (Max Blok Dinaikkan & Solusi 100% Akurat)
+        // Arah (dir): 0=Atas, 1=Kanan, 2=Bawah, 3=Kiri
         const LEVELS_DATA = [
-            { id: 1, title: "Langkah Pertama", icon: "fa-shoe-prints", category: "Urutan", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:3, y:0}, obstacles: [], palette: ["FWD"], max: 5, minBlocks: 3, solution: [{t:"FWD"}, {t:"FWD"}, {t:"FWD"}] },
-            { id: 2, title: "Belok Kanan", icon: "fa-redo", category: "Urutan", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:2, y:2}, obstacles: [], palette: ["FWD", "RIGHT"], max: 6, minBlocks: 5, solution: [{t:"FWD"},{t:"FWD"},{t:"RIGHT"},{t:"FWD"},{t:"FWD"}] },
-            { id: 3, title: "Menghindar", icon: "fa-exclamation-triangle", category: "Logika", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:4, y:0}, obstacles: [[2,0], [2,1]], palette: ["FWD", "RIGHT", "LEFT"], max: 10, minBlocks: 8, solution: [{t:"RIGHT"},{t:"FWD"},{t:"FWD"},{t:"LEFT"},{t:"FWD"},{t:"FWD"},{t:"FWD"},{t:"FWD"}] },
-            { id: 4, title: "Parkir Mundur", icon: "fa-car", category: "Logika", grid: [6,6], start: {x:2, y:2, dir:2}, goal: {x:0, y:0}, obstacles: [[1,1]], palette: ["FWD", "RIGHT", "LEFT"], max: 8, minBlocks: 6, solution: [{t:"FWD"},{t:"FWD"},{t:"RIGHT"},{t:"FWD"},{t:"FWD"},{t:"RIGHT"}] },
-            { id: 5, title: "Lompatan Kecil", icon: "fa-frog", category: "Lompat", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:3, y:0}, obstacles: [[1,0]], palette: ["FWD", "JUMP"], max: 5, minBlocks: 3, solution: [{t:"JUMP"}, {t:"FWD"}, {t:"FWD"}] },
-            { id: 6, title: "Jalan Panjang", icon: "fa-road", category: "Perulangan", grid: [6,6], start: {x:0, y:5, dir:1}, goal: {x:5, y:5}, obstacles: [], palette: ["FWD", "REPEAT_N"], max: 4, minBlocks: 1, solution: [{t:"REPEAT_N", n:5, action:"FWD"}] },
-            { id: 7, title: "Naik Tangga", icon: "fa-stairs", category: "Perulangan", grid: [6,6], start: {x:0, y:5, dir:1}, goal: {x:3, y:2}, obstacles: [[1,5],[2,4],[3,3]], palette: ["FWD", "LEFT", "RIGHT", "JUMP", "REPEAT_N"], max: 6, minBlocks: 2, solution: [{t:"REPEAT_N", n:3, action:"JUMP"}, {t:"LEFT"}] },
-            { id: 8, title: "Zig Zag", icon: "fa-bolt", category: "Perulangan", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:2, y:2}, obstacles: [], palette: ["FWD", "RIGHT", "LEFT", "REPEAT_N"], max: 8, minBlocks: 4, solution: [{t:"FWD"},{t:"RIGHT"},{t:"FWD"},{t:"LEFT"}] },
-            { id: 9, title: "Lompat Jauh", icon: "fa-rocket", category: "Lompat", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:4, y:0}, obstacles: [[1,0], [3,0]], palette: ["FWD", "JUMP", "REPEAT_N"], max: 5, minBlocks: 2, solution: [{t:"REPEAT_N", n:2, action:"JUMP"}] },
-            { id: 10, title: "Labirin Kecil", icon: "fa-puzzle-piece", category: "Gabungan", grid: [6,6], start: {x:0, y:0, dir:2}, goal: {x:5, y:5}, obstacles: [[0,1],[1,1],[2,1],[3,1],[4,1],[1,3],[2,3],[3,3],[4,3],[5,3]], palette: ["FWD", "LEFT", "RIGHT"], max: 15, minBlocks: 10, solution: [{t:"FWD"},{t:"LEFT"},{t:"FWD"},{t:"FWD"},{t:"FWD"},{t:"FWD"},{t:"FWD"}] },
-            { id: 11, title: "Pilih Jalan", icon: "fa-code-branch", category: "Pengkondisian", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:5, y:0}, obstacles: [[2,0]], palette: ["FWD", "JUMP", "IF"], max: 6, minBlocks: 4, solution: [{t:"FWD"}, {t:"IF", action:"JUMP"}, {t:"FWD"}, {t:"FWD"}] },
-            { id: 12, title: "Batu Beruntun", icon: "fa-cubes", category: "Logika", grid: [6,6], start: {x:0, y:2, dir:1}, goal: {x:5, y:2}, obstacles: [[2,2],[3,2]], palette: ["FWD", "JUMP", "REPEAT_N"], max: 5, minBlocks: 3, solution: [{t:"FWD"},{t:"REPEAT_N", n:2, action:"JUMP"},{t:"FWD"}] },
-            { id: 13, title: "Putaran Kiri", icon: "fa-undo", category: "Logika", grid: [6,6], start: {x:3, y:3, dir:0}, goal: {x:2, y:2}, obstacles: [[3,2]], palette: ["FWD", "LEFT", "RIGHT"], max: 6, minBlocks: 4, solution: [{t:"LEFT"},{t:"FWD"},{t:"RIGHT"},{t:"FWD"}] },
-            { id: 14, title: "Jebakan", icon: "fa-skull", category: "Logika", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:4, y:4}, obstacles: [[1,0],[2,0],[3,0],[0,1],[0,2],[0,3]], palette: ["FWD", "RIGHT", "JUMP"], max: 10, minBlocks: 6, solution: [{t:"RIGHT"},{t:"JUMP"},{t:"LEFT"},{t:"JUMP"}] },
-            { id: 15, title: "Lorong", icon: "fa-archway", category: "Gabungan", grid: [6,6], start: {x:0, y:2, dir:1}, goal: {x:5, y:2}, obstacles: [[0,1],[1,1],[2,1],[3,1],[4,1],[5,1],[0,3],[1,3],[2,3],[3,3],[4,3],[5,3]], palette: ["FWD", "REPEAT_N"], max: 4, minBlocks: 1, solution: [{t:"REPEAT_N", n:5, action:"FWD"}] },
-            { id: 16, title: "Buntu", icon: "fa-ban", category: "Pengkondisian", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:0, y:2}, obstacles: [[1,0],[0,1]], palette: ["FWD", "RIGHT", "LEFT", "JUMP", "IF_ELSE"], max: 6, minBlocks: 3, solution: [{t:"RIGHT"},{t:"JUMP"},{t:"FWD"}] },
-            { id: 17, title: "Tarian Robot", icon: "fa-music", category: "Perulangan", grid: [6,6], start: {x:2, y:2, dir:1}, goal: {x:2, y:2}, obstacles: [], palette: ["FWD", "RIGHT", "LEFT", "REPEAT_N"], max: 8, minBlocks: 4, solution: [{t:"REPEAT_N", n:4, action:"RIGHT"}] },
-            { id: 18, title: "Penyusup", icon: "fa-user-secret", category: "Gabungan", grid: [6,6], start: {x:0, y:5, dir:1}, goal: {x:5, y:0}, obstacles: [[1,4],[2,3],[3,2],[4,1]], palette: ["FWD", "LEFT", "RIGHT", "JUMP", "REPEAT_N"], max: 12, minBlocks: 6, solution: [{t:"JUMP"},{t:"LEFT"},{t:"JUMP"},{t:"RIGHT"},{t:"JUMP"}] },
-            { id: 19, title: "Master Logika", icon: "fa-brain", category: "Kompleks", grid: [6,6], start: {x:0, y:0, dir:2}, goal: {x:4, y:5}, obstacles: [[1,1],[3,3]], palette: ["FWD", "LEFT", "RIGHT", "JUMP", "IF_ELSE", "REPEAT_N"], max: 15, minBlocks: 8, solution: [{t:"FWD"},{t:"FWD"},{t:"LEFT"},{t:"FWD"},{t:"RIGHT"}] },
-            { id: 20, title: "Ujian Akhir", icon: "fa-graduation-cap", category: "Kompleks", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:5, y:5}, obstacles: [[1,0],[1,1],[1,2],[1,3],[1,4],[3,5],[3,4],[3,3],[3,2],[3,1]], palette: ["FWD", "LEFT", "RIGHT", "JUMP", "REPEAT_N"], max: 20, minBlocks: 10, solution: [{t:"RIGHT"},{t:"FWD"},{t:"FWD"},{t:"FWD"},{t:"FWD"},{t:"FWD"},{t:"LEFT"},{t:"FWD"},{t:"FWD"},{t:"FWD"},{t:"FWD"},{t:"FWD"}] }
+            { id: 1, title: "Langkah Pertama", icon: "fa-shoe-prints", category: "Urutan", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:3, y:0}, obstacles: [], palette: ["FWD"], max: 10, minBlocks: 3, solution: [{t:"FWD"}, {t:"FWD"}, {t:"FWD"}] },
+            { id: 2, title: "Belok Kanan", icon: "fa-redo", category: "Urutan", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:2, y:2}, obstacles: [], palette: ["FWD", "RIGHT"], max: 12, minBlocks: 5, solution: [{t:"FWD"},{t:"FWD"},{t:"RIGHT"},{t:"FWD"},{t:"FWD"}] },
+            { id: 3, title: "Menghindar", icon: "fa-exclamation-triangle", category: "Logika", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:4, y:0}, obstacles: [[2,0], [2,1]], palette: ["FWD", "RIGHT", "LEFT"], max: 18, minBlocks: 11, solution: [{t:"RIGHT"},{t:"FWD"},{t:"FWD"},{t:"LEFT"},{t:"FWD"},{t:"FWD"},{t:"FWD"},{t:"FWD"},{t:"LEFT"},{t:"FWD"},{t:"FWD"}] },
+            { id: 4, title: "Parkir Mundur", icon: "fa-car", category: "Logika", grid: [6,6], start: {x:2, y:2, dir:2}, goal: {x:0, y:0}, obstacles: [[1,1]], palette: ["FWD", "RIGHT", "LEFT"], max: 15, minBlocks: 6, solution: [{t:"RIGHT"},{t:"FWD"},{t:"FWD"},{t:"RIGHT"},{t:"FWD"},{t:"FWD"}] },
+            { id: 5, title: "Lompatan Kecil", icon: "fa-frog", category: "Lompat", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:3, y:0}, obstacles: [[1,0]], palette: ["FWD", "JUMP"], max: 10, minBlocks: 2, solution: [{t:"JUMP"}, {t:"FWD"}] },
+            { id: 6, title: "Jalan Panjang", icon: "fa-road", category: "Perulangan", grid: [6,6], start: {x:0, y:5, dir:1}, goal: {x:5, y:5}, obstacles: [], palette: ["FWD", "REPEAT_N"], max: 10, minBlocks: 1, solution: [{t:"REPEAT_N", n:5, action:"FWD"}] },
+            { id: 7, title: "Naik Tangga", icon: "fa-stairs", category: "Perulangan", grid: [6,6], start: {x:0, y:5, dir:1}, goal: {x:2, y:3}, obstacles: [[1,5], [2,4]], palette: ["FWD", "LEFT", "RIGHT", "JUMP", "REPEAT_N"], max: 10, minBlocks: 3, solution: [{t:"JUMP"},{t:"LEFT"},{t:"JUMP"}] },
+            { id: 8, title: "Zig Zag", icon: "fa-bolt", category: "Perulangan", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:2, y:2}, obstacles: [], palette: ["FWD", "RIGHT", "LEFT", "REPEAT_N"], max: 15, minBlocks: 7, solution: [{t:"FWD"},{t:"RIGHT"},{t:"FWD"},{t:"LEFT"},{t:"FWD"},{t:"RIGHT"},{t:"FWD"}] },
+            { id: 9, title: "Lompat Jauh", icon: "fa-rocket", category: "Lompat", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:4, y:0}, obstacles: [[1,0], [3,0]], palette: ["FWD", "JUMP", "REPEAT_N"], max: 10, minBlocks: 1, solution: [{t:"REPEAT_N", n:2, action:"JUMP"}] },
+            { id: 10, title: "Labirin Kecil", icon: "fa-puzzle-piece", category: "Gabungan", grid: [6,6], start: {x:0, y:0, dir:2}, goal: {x:5, y:5}, obstacles: [[1,4],[2,4],[3,4],[4,4],[1,3],[2,3],[3,3],[4,3]], palette: ["FWD", "LEFT", "RIGHT", "REPEAT_N"], max: 18, minBlocks: 3, solution: [{t:"REPEAT_N", n:5, action:"FWD"}, {t:"LEFT"}, {t:"REPEAT_N", n:5, action:"FWD"}] },
+            { id: 11, title: "Pilih Jalan", icon: "fa-code-branch", category: "Pengkondisian", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:5, y:0}, obstacles: [[2,0]], palette: ["FWD", "JUMP", "IF"], max: 12, minBlocks: 4, solution: [{t:"FWD"}, {t:"IF", action:"JUMP"}, {t:"FWD"}, {t:"FWD"}] },
+            { id: 12, title: "Batu Beruntun", icon: "fa-cubes", category: "Logika", grid: [6,6], start: {x:0, y:2, dir:1}, goal: {x:5, y:2}, obstacles: [[2,2],[4,2]], palette: ["FWD", "JUMP", "REPEAT_N"], max: 12, minBlocks: 2, solution: [{t:"FWD"},{t:"REPEAT_N", n:2, action:"JUMP"}] },
+            { id: 13, title: "Putaran Kiri", icon: "fa-undo", category: "Logika", grid: [6,6], start: {x:3, y:3, dir:0}, goal: {x:2, y:2}, obstacles: [[3,2]], palette: ["FWD", "LEFT", "RIGHT"], max: 12, minBlocks: 4, solution: [{t:"LEFT"},{t:"FWD"},{t:"RIGHT"},{t:"FWD"}] },
+            { id: 14, title: "Jebakan", icon: "fa-skull", category: "Logika", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:4, y:4}, obstacles: [[1,0], [2,1], [3,2], [4,3]], palette: ["FWD", "RIGHT", "LEFT", "JUMP"], max: 18, minBlocks: 7, solution: [{t:"JUMP"},{t:"RIGHT"},{t:"JUMP"},{t:"LEFT"},{t:"JUMP"},{t:"RIGHT"},{t:"JUMP"}] },
+            { id: 15, title: "Lorong", icon: "fa-archway", category: "Gabungan", grid: [6,6], start: {x:0, y:2, dir:1}, goal: {x:5, y:2}, obstacles: [[0,1],[1,1],[2,1],[3,1],[4,1],[5,1],[0,3],[1,3],[2,3],[3,3],[4,3],[5,3]], palette: ["FWD", "REPEAT_N"], max: 10, minBlocks: 1, solution: [{t:"REPEAT_N", n:5, action:"FWD"}] },
+            { id: 16, title: "Buntu", icon: "fa-ban", category: "Pengkondisian", grid: [6,6], start: {x:0, y:0, dir:2}, goal: {x:2, y:0}, obstacles: [[0,1]], palette: ["FWD", "RIGHT", "LEFT", "JUMP", "IF_ELSE"], max: 12, minBlocks: 3, solution: [{t:"IF_ELSE"},{t:"FWD"},{t:"FWD"}] },
+            { id: 17, title: "Tarian Robot", icon: "fa-music", category: "Perulangan", grid: [6,6], start: {x:2, y:2, dir:1}, goal: {x:2, y:2}, obstacles: [], palette: ["FWD", "RIGHT", "LEFT", "REPEAT_N"], max: 15, minBlocks: 1, solution: [{t:"REPEAT_N", n:4, action:"RIGHT"}] },
+            { id: 18, title: "Penyusup", icon: "fa-user-secret", category: "Gabungan", grid: [6,6], start: {x:0, y:5, dir:1}, goal: {x:5, y:0}, obstacles: [[1,4],[2,4],[3,4],[4,4],[1,3],[2,3],[3,3],[4,3]], palette: ["FWD", "LEFT", "RIGHT", "JUMP", "REPEAT_N"], max: 20, minBlocks: 3, solution: [{t:"REPEAT_N", n:5, action:"FWD"}, {t:"LEFT"}, {t:"REPEAT_N", n:5, action:"FWD"}] },
+            { id: 19, title: "Master Logika", icon: "fa-brain", category: "Kompleks", grid: [6,6], start: {x:0, y:0, dir:2}, goal: {x:4, y:5}, obstacles: [[1,1],[3,3]], palette: ["FWD", "LEFT", "RIGHT", "JUMP", "IF_ELSE", "REPEAT_N"], max: 25, minBlocks: 6, solution: [{t:"FWD"},{t:"FWD"},{t:"LEFT"},{t:"REPEAT_N", n:4, action:"FWD"},{t:"RIGHT"},{t:"REPEAT_N", n:3, action:"FWD"}] },
+            { id: 20, title: "Ujian Akhir", icon: "fa-graduation-cap", category: "Kompleks", grid: [6,6], start: {x:0, y:0, dir:1}, goal: {x:5, y:5}, obstacles: [[1,2], [2,2], [3,2]], palette: ["FWD", "LEFT", "RIGHT", "JUMP", "REPEAT_N"], max: 30, minBlocks: 3, solution: [{t:"REPEAT_N", n:5, action:"FWD"}, {t:"RIGHT"}, {t:"REPEAT_N", n:5, action:"FWD"}] }
         ];
 
         const DummyDB = {
             users: [
-                { id: "U01", username: "admin", password: "admin2026", role: "admin", nama_lengkap: "Guru Administrator", kelas: "-", tahun_pelajaran: "-" },
+                { id: "U01", username: "admin", password: "edudigital", role: "admin", nama_lengkap: "Guru Administrator", kelas: "-", tahun_pelajaran: "-" },
                 { id: "U02", username: "peserta", password: "edudigital", role: "peserta", nama_lengkap: "Siswa Penjelajah", kelas: "7A", tahun_pelajaran: "2025/2026" }
             ],
             progress: [ { username: "peserta", level_terbuka: 1, skor_total: 0, status: Array(50).fill(false) } ],
@@ -423,7 +425,7 @@
                         } else res = { status: 'error', message: 'Username/Password salah' }; 
                     } else { 
                         const fetchRes = await fetch(GAS_URL, { method: 'POST', body: new URLSearchParams({ action: 'login', username: u, password: p }) }); 
-                        if(!fetchRes.ok) throw new Error("Gagal mengambil response (Network Error)");
+                        if(!fetchRes.ok) throw new Error("Gagal mengambil response");
                         res = await fetchRes.json(); 
                     }
                     
@@ -440,7 +442,7 @@
                 } catch (err) { 
                     Utils.hideLoading(); 
                     console.error("Login Error:", err);
-                    Utils.showToast("Gagal ke Server GAS! Pastikan Akses Skrip = ANYONE.", "error"); 
+                    Utils.showToast("Gagal terhubung ke Server. Pastikan Link GAS Valid.", "error"); 
                 }
             },
             logout: () => { AppState.user = null; AppState.progress = null; document.getElementById('login-form').reset(); UI.showView('login'); }
@@ -488,7 +490,7 @@
             renderCommands: () => {
                 const list = document.getElementById('commands-list'); list.innerHTML = '';
                 const limitText = document.getElementById('block-limit-text');
-                limitText.innerText = `(Maks ${AppState.currentLevel.max})`;
+                limitText.innerText = `(${AppState.commands.length} / Maks ${AppState.currentLevel.max})`;
                 limitText.className = AppState.commands.length > AppState.currentLevel.max ? "text-danger" : "text-secondary";
 
                 if(AppState.commands.length === 0) { list.innerHTML = '<div class="text-center text-gray-400 text-sm mt-8 border-2 border-dashed border-gray-300 rounded-lg p-4"><i class="fas fa-hand-pointer block text-2xl mb-2"></i> Klik blok di atas untuk menambahkan skrip</div>'; return; }
@@ -576,8 +578,9 @@
                 if(AppState.helpLeft <= 0) { Utils.showToast("Kuota Bantuan Habis!", "error"); return; }
                 if(!AppState.currentLevel.solution || AppState.currentLevel.solution.length === 0) { Utils.showToast("Bantuan tidak tersedia.", "error"); return; }
                 AppState.helpLeft--; document.getElementById('help-count').innerText = AppState.helpLeft;
+                // Deep copy array agar tidak merubah referensi asli
                 AppState.commands = JSON.parse(JSON.stringify(AppState.currentLevel.solution)); 
-                StudentUI.renderCommands(); Utils.showToast("Jawaban disalin ke Skrip!");
+                StudentUI.renderCommands(); Utils.showToast("Jawaban yang 100% akurat disalin ke Skrip!");
             },
             run: async () => {
                 if(AppState.commands.length === 0) { Utils.showToast("Skrip masih kosong!"); return; }
@@ -607,7 +610,7 @@
                 AppState.isPlaying = false;
                 
                 if (success && GameEngine.robot.x === AppState.currentLevel.goal.x && GameEngine.robot.y === AppState.currentLevel.goal.y) Game.win();
-                else Utils.showToast("Gagal! Cek logika skripmu.", "error");
+                else Utils.showToast("Gagal! Cek logika skripmu atau klik Bantuan.", "error");
             },
             win: async () => {
                 const used = AppState.commands.length;
@@ -618,10 +621,8 @@
                 if(used > min) score -= (used - min) * 10;
                 if(score < 40) score = 40; 
                 
-                // Cek apakah level ini sudah pernah dimenangkan sebelumnya
                 const isAlreadyBeaten = AppState.progress.status[lvlId - 1];
 
-                // OPTIMISTIC UI UPDATE: Langsung update memori internal agar cepat
                 if (!isAlreadyBeaten) {
                     AppState.progress.skor_total += score;
                     AppState.progress.status[lvlId - 1] = true;
@@ -629,29 +630,23 @@
                         AppState.progress.level_terbuka = lvlId + 1;
                     }
                 } else {
-                    score = 0; // Jika mengulang, tidak dapat skor tambahan
+                    score = 0; 
                 }
 
-                // Update info di Modal
                 document.getElementById('level-score-earned').innerText = isAlreadyBeaten ? "+0 (Sudah Selesai)" : `+${score}`;
                 document.getElementById('level-total-score').innerText = AppState.progress.skor_total;
                 document.getElementById('score-bar').style.width = isAlreadyBeaten ? '100%' : `${score}%`;
-                document.getElementById('score-note').innerText = isAlreadyBeaten ? "Latihan ulang selesai!" : (score === 100 ? "Sempurna! Sangat Efisien!" : `Terlalu panjang! (Batas Ideal: ${min} blok)`);
+                document.getElementById('score-note').innerText = isAlreadyBeaten ? "Latihan ulang selesai!" : (score === 100 ? "Sempurna! Sangat Efisien (Blok Minimum)!" : `Bisa lebih pendek! (Kamu: ${used}, Ideal: ${min} blok)`);
                 
-                // Tampilkan Modal
                 document.getElementById('success-modal').classList.remove('hidden');
                 
-                // BACKEND SAVE (Jalan di latar belakang, tidak membuat web nge-freeze/loading)
                 if(!IS_PREVIEW && !isAlreadyBeaten) {
                     try {
                         fetch(GAS_URL, { 
                             method: 'POST', 
                             body: new URLSearchParams({ action: 'saveProgress', username: AppState.user.username, level: lvlId, score: score }) 
                         });
-                        // Hapus kode login ulang disini karena UI sudah diupdate optimistik
-                    } catch(e) { 
-                        console.error("Save Progress Error:", e); 
-                    }
+                    } catch(e) { console.error("Save Progress Error:", e); }
                 }
             },
             backToMap: () => { 
@@ -664,12 +659,8 @@
                 const allLevels = [...LEVELS_DATA, ...DummyDB.customLevels];
                 const nextLevelData = allLevels.find(l => l.id === nextLvlId);
 
-                if (nextLevelData) {
-                    Game.start(nextLvlId);
-                } else {
-                    Utils.showToast("Selamat! Kamu telah menyelesaikan semua level!", "success");
-                    UI.showStudentMap();
-                }
+                if (nextLevelData) Game.start(nextLvlId);
+                else { Utils.showToast("Selamat! Kamu telah menyelesaikan semua level!", "success"); UI.showStudentMap(); }
             }
         };
 
@@ -747,7 +738,7 @@
         };
 
         const Admin = {
-            currentData: [], filteredData: [],
+            currentData: [], filteredData: [], currentSort: null,
             loadData: async () => {
                 const tbody = document.getElementById('admin-table-body'); tbody.innerHTML = '<tr><td colspan="8" class="text-center p-6"><i class="fas fa-spinner fa-spin text-primary text-2xl"></i><p class="mt-2 text-gray-500">Mengambil data...</p></td></tr>';
                 try {
@@ -767,9 +758,17 @@
                 fTahun.innerHTML = '<option value="">Semua Tahun</option>'; uTahun.forEach(t => { if(t!=='-') fTahun.innerHTML += `<option value="${t}">${t}</option>`; }); fTahun.value = tVal;
                 fKelas.innerHTML = '<option value="">Semua Kelas</option>'; uKelas.forEach(k => { if(k!=='-') fKelas.innerHTML += `<option value="${k}">${k}</option>`; }); fKelas.value = kVal;
             },
+            sortBy: (key) => {
+                Admin.currentSort = key;
+                Admin.applyFilter();
+                Utils.showToast(`Diurutkan dari ${key === 'skor' ? 'Skor' : 'Level'} Tertinggi`, "success");
+            },
             applyFilter: () => {
                 const t = document.getElementById('filter-tahun').value; const k = document.getElementById('filter-kelas').value;
                 Admin.filteredData = Admin.currentData.filter(d => (t===""||d.tahun_pelajaran===t) && (k===""||d.kelas===k));
+                if (Admin.currentSort) {
+                    Admin.filteredData.sort((a, b) => b[Admin.currentSort] - a[Admin.currentSort]);
+                }
                 Admin.renderTable();
             },
             renderTable: () => {
@@ -845,7 +844,7 @@
             generateLevelWithAI: async () => {
                 document.getElementById('add-level-modal').classList.add('hidden'); Utils.showLoading("AI meracik soal...");
                 const cat = document.getElementById('ai-level-cat').value;
-                const apiKey = ""; // Isi API Key jika deploy
+                const apiKey = ""; 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
                 
                 try {
