@@ -60,7 +60,6 @@
 
     <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2"></div>
 
-    <!-- Header sekarang selalu di atas dan tidak akan tertutup form login -->
     <header class="bg-white shadow-sm border-b border-gray-200 py-3 px-6 flex justify-between items-center z-50 shrink-0">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg transform -rotate-6">
@@ -82,11 +81,8 @@
         </div>
     </header>
 
-    <!-- Main Content Area: Menggunakan flex-grow dan flex-col agar layout tersusun rapi ke bawah -->
     <main class="flex-grow flex flex-col overflow-y-auto relative">
         
-        <!-- ==================== VIEW: LOGIN ==================== -->
-        <!-- Perbaikan: Menghapus absolute inset-0 agar tidak menutupi header -->
         <div id="view-login" class="flex-grow flex flex-col items-center justify-center bg-gray-50 p-4 w-full">
             <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md fade-in text-center border border-gray-100 mt-8 mb-8">
                 <div class="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform -rotate-6 mx-auto mb-6">
@@ -97,7 +93,7 @@
                 
                 <form id="login-form" onsubmit="Auth.login(event)">
                     <div class="mb-4 text-left">
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Username</label>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Username (NISN)</label>
                         <input type="text" id="login-user" class="w-full border border-gray-300 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition" placeholder="Masukkan username" required>
                     </div>
                     <div class="mb-6 text-left">
@@ -108,17 +104,10 @@
                         <i class="fas fa-paper-plane mr-2"></i> Mulai Bermain
                     </button>
                 </form>
-                
-                <div class="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200 text-xs text-yellow-800 text-left">
-                    <p class="font-bold mb-1"><i class="fas fa-info-circle"></i> Info Akun Dummy (IS_PREVIEW = true):</p>
-                    <p>Siswa: <b>peserta</b> / <b>edudigital</b></p>
-                    <p>Admin: <b>admin</b> / <b>admin2026</b></p>
-                </div>
             </div>
         </div>
 
         <div id="view-peserta" class="hidden flex-grow flex-col bg-gray-50">
-            <!-- Map View -->
             <div id="peserta-map" class="flex-grow p-4 md:p-8 overflow-y-auto fade-in">
                 <div class="max-w-4xl mx-auto">
                     <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8 flex justify-between items-center">
@@ -138,7 +127,6 @@
             </div>
 
             <div id="peserta-game" class="hidden flex-grow flex flex-col fade-in relative h-full">
-                <!-- Top Toolbar -->
                 <div class="bg-white border-b px-4 py-3 flex justify-between items-center shadow-sm z-10 shrink-0">
                     <button onclick="UI.showStudentMap()" class="text-gray-600 hover:text-primary font-bold"><i class="fas fa-arrow-left mr-2"></i> Kembali</button>
                     <h3 id="game-title" class="font-bold text-dark text-lg hidden sm:block">Level 1</h3>
@@ -148,9 +136,7 @@
                     </div>
                 </div>
                 
-                <!-- Game Container -->
                 <div id="game-container" class="flex-grow flex flex-col md:flex-row overflow-hidden">
-                    <!-- Left: Canvas Game -->
                     <div class="w-full md:w-1/2 bg-gray-100 p-4 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-gray-300 overflow-y-auto">
                         <div class="bg-white p-4 rounded-xl shadow-sm mb-4 w-full max-w-sm">
                             <p id="game-instruction" class="text-sm text-gray-700 font-medium text-center"></p>
@@ -161,16 +147,13 @@
                     </div>
 
                     <div class="w-full md:w-1/2 flex flex-col bg-white overflow-hidden">
-                        <!-- Palette Blocks -->
                         <div class="p-3 bg-gray-50 border-b border-gray-200 flex flex-wrap gap-2 shrink-0" id="block-palette"></div>
                         
-                        <!-- Work Area -->
                         <div class="flex-grow p-4 overflow-y-auto relative bg-slate-50" id="block-workarea">
                             <p class="text-xs text-gray-400 font-bold mb-3 uppercase tracking-wider text-center">Area Skrip <span id="block-limit-text" class="text-secondary">(Maks 0)</span></p>
                             <div id="commands-list" class="flex flex-col gap-2 min-h-[200px]" ondragover="StudentUI.allowDrop(event)" ondrop="StudentUI.drop(event)"></div>
                         </div>
 
-                        <!-- Run Button -->
                         <div class="p-4 bg-white border-t border-gray-200 shrink-0">
                             <button onclick="Game.run()" class="w-full bg-success text-white py-3 rounded-xl font-bold shadow-md hover:bg-green-600 hover:shadow-lg transition text-lg flex justify-center items-center gap-2">
                                 <i class="fas fa-play"></i> Jalankan Program
@@ -293,13 +276,12 @@
         </div>
     </div>
 
-    <!-- Modals Admin -->
     <div id="add-student-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[100000] hidden flex items-center justify-center px-4 backdrop-blur-sm fade-in">
         <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
             <h3 class="text-xl font-bold mb-4 text-dark border-b pb-2"><i class="fas fa-user-plus text-primary"></i> Tambah Siswa</h3>
             <form id="form-add-student" onsubmit="Admin.submitAddStudent(event)">
                 <div class="grid grid-cols-2 gap-3 mb-3">
-                    <div><label class="block text-xs font-bold text-gray-700 mb-1">Username</label><input type="text" id="add-s-user" class="border p-2 rounded w-full text-sm" required></div>
+                    <div><label class="block text-xs font-bold text-gray-700 mb-1">Username (NISN)</label><input type="text" id="add-s-user" class="border p-2 rounded w-full text-sm" required></div>
                     <div><label class="block text-xs font-bold text-gray-700 mb-1">Password</label><input type="text" id="add-s-pass" value="edudigital" class="border p-2 rounded w-full text-sm" required></div>
                 </div>
                 <div class="mb-3"><label class="block text-xs font-bold text-gray-700 mb-1">Nama Lengkap</label><input type="text" id="add-s-nama" class="border p-2 rounded w-full text-sm" required></div>
@@ -354,12 +336,10 @@
         // ===================================================================
         // KONFIGURASI APLIKASI UTAMA
         // ===================================================================
-        // SAKLAR MODE: Ubah ke 'false' JIKA SUDAH DEPLOY DI BLOGGER DAN GAS SIAP!
-        // Jika 'true', aplikasi akan menggunakan database Dummy (Bisa dicoba di GitHub/Lokal).
         const IS_PREVIEW = false; 
         
-        // URL DEPLOY GOOGLE APPS SCRIPT ANDA DI SINI
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbz5XqippWzhLHgJmX5q0kxI2QHABfnLp4A5zwwMjYR9P6NGo_YK7-wFwA20bOL6f65qxQ/exec";
+        // PASTIKAN GAS_URL INI SUDAH DI-DEPLOY SEBAGAI 'ANYONE'
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxg2jtm76-sqw3vu-w4u5HIaUxU_pNfW9_cxy_NO2o_GAx01bSt6539Cr5aWuqW-FZHqw/exec";
         // ===================================================================
 
         const LEVELS_DATA = [
@@ -427,13 +407,12 @@
                     let res;
                     if (IS_PREVIEW) { 
                         await new Promise(r => setTimeout(r, 800)); 
-                        const user = DummyDB.users.find(x => x.username === u && x.password === p); 
+                        const user = DummyDB.users.find(x => String(x.username) === String(u) && String(x.password) === String(p)); 
                         if (user) { 
-                            const prog = DummyDB.progress.find(x => x.username === u) || { username: u, level_terbuka: 1, skor_total: 0, status: Array(50).fill(false) }; 
+                            const prog = DummyDB.progress.find(x => String(x.username) === String(u)) || { username: u, level_terbuka: 1, skor_total: 0, status: Array(50).fill(false) }; 
                             res = { status: 'success', user: user, progress: prog }; 
                         } else res = { status: 'error', message: 'Username/Password salah' }; 
                     } else { 
-                        // Metode Live: Ambil data dari GAS URL
                         const fetchRes = await fetch(GAS_URL, { method: 'POST', body: new URLSearchParams({ action: 'login', username: u, password: p }) }); 
                         if(!fetchRes.ok) throw new Error("Gagal mengambil response (Network Error)");
                         res = await fetchRes.json(); 
@@ -731,7 +710,7 @@
                     let allData = [];
                     if(IS_PREVIEW) {
                         const peserta = DummyDB.users.filter(u => u.role === 'peserta');
-                        allData = peserta.map(u => { const p = DummyDB.progress.find(x => x.username === u.username); return { username: u.username, nama: u.nama_lengkap, kelas: u.kelas || '-', tahun_pelajaran: u.tahun_pelajaran || '-', level: p ? p.level_terbuka : 1, skor: p ? p.skor_total : 0, status: p ? p.status : Array(50).fill(false) }; });
+                        allData = peserta.map(u => { const p = DummyDB.progress.find(x => String(x.username) === String(u.username)); return { username: u.username, nama: u.nama_lengkap, kelas: u.kelas || '-', tahun_pelajaran: u.tahun_pelajaran || '-', level: p ? p.level_terbuka : 1, skor: p ? p.skor_total : 0, status: p ? p.status : Array(50).fill(false) }; });
                     } else { const res = await fetch(`${GAS_URL}?action=getAdminData`); const data = await res.json(); allData = data.students; }
                     Admin.currentData = allData; Admin.populateFilters(); Admin.applyFilter();
                 } catch (e) { tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4 text-danger">Gagal koneksi.</td></tr>'; }
@@ -774,7 +753,7 @@
             },
             showUploadModal: () => { document.getElementById('file-upload-excel').value=''; document.getElementById('upload-student-modal').classList.remove('hidden'); },
             downloadTemplate: () => {
-                const ws = XLSX.utils.json_to_sheet([ { "Username": "siswa01", "Password": "edudigital", "Nama Lengkap": "Ahmad", "Kelas": "7A", "Tahun Pelajaran": "2025/2026" } ]);
+                const ws = XLSX.utils.json_to_sheet([ { "Username": "0123456789", "Password": "edudigital", "Nama Lengkap": "Ahmad", "Kelas": "7A", "Tahun Pelajaran": "2025/2026" } ]);
                 const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Siswa"); XLSX.writeFile(wb, "Template_Siswa.xlsx");
             },
             handleUploadExcel: () => {
@@ -782,18 +761,36 @@
                 const r = new FileReader();
                 r.onload = async (e) => {
                     const data = new Uint8Array(e.target.result); const wb = XLSX.read(data, {type: 'array'});
-                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                    const students = json.map(row => ({ username: row['Username']||row['username'], password: row['Password']||row['password'], nama: row['Nama Lengkap']||row['nama'], kelas: row['Kelas']||'-', tahun_pelajaran: row['Tahun Pelajaran']||'-' })).filter(s => s.username && s.nama);
+                    // Mencegah konversi format Excel angka agar NISN utuh (0 di depan tidak hilang)
+                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: false });
+                    
+                    const students = json.map(row => ({ 
+                        // Memaksa format ke tipe String agar angka 0 aman sepenuhnya
+                        username: String(row['Username']||row['username']||'').trim(), 
+                        password: String(row['Password']||row['password']||'').trim(), 
+                        nama: row['Nama Lengkap']||row['nama'], 
+                        kelas: row['Kelas']||'-', 
+                        tahun_pelajaran: row['Tahun Pelajaran']||'-' 
+                    })).filter(s => s.username && s.nama);
+                    
                     if(!students.length) return Utils.showToast("Format kosong", "error");
                     document.getElementById('upload-student-modal').classList.add('hidden'); Utils.showLoading();
-                    if(IS_PREVIEW) { await new Promise(r=>setTimeout(r,1000)); students.forEach(s=>{ DummyDB.users.push({id:"U"+Date.now(), username:s.username, password:s.password, role:"peserta", nama_lengkap:s.nama, kelas:s.kelas, tahun_pelajaran:s.tahun_pelajaran}); DummyDB.progress.push({username:s.username, level_terbuka:1, skor_total:0, status:Array(50).fill(false)}); }); }
-                    else { try { await fetch(GAS_URL, { method:'POST', body:new URLSearchParams({action:'uploadStudents', data:JSON.stringify(students)}) }); } catch(err){} }
+                    
+                    if(IS_PREVIEW) { 
+                        await new Promise(r=>setTimeout(r,1000)); 
+                        students.forEach(s=>{ 
+                            DummyDB.users.push({id:"U"+Date.now(), username:s.username, password:s.password, role:"peserta", nama_lengkap:s.nama, kelas:s.kelas, tahun_pelajaran:s.tahun_pelajaran}); 
+                            DummyDB.progress.push({username:s.username, level_terbuka:1, skor_total:0, status:Array(50).fill(false)}); 
+                        }); 
+                    } else { 
+                        try { await fetch(GAS_URL, { method:'POST', body:new URLSearchParams({action:'uploadStudents', data:JSON.stringify(students)}) }); } catch(err){} 
+                    }
                     Utils.hideLoading(); Utils.showToast("Upload selesai!"); Admin.loadData();
                 }; r.readAsArrayBuffer(f.files[0]);
             },
             resetProgress: async (un) => {
                 if(!confirm(`Reset progres ${un}?`)) return; Utils.showLoading();
-                if(IS_PREVIEW) { await new Promise(r=>setTimeout(r,500)); const p=DummyDB.progress.find(x=>x.username===un); if(p){p.level_terbuka=1; p.skor_total=0; p.status=Array(50).fill(false);} }
+                if(IS_PREVIEW) { await new Promise(r=>setTimeout(r,500)); const p=DummyDB.progress.find(x=>String(x.username)===String(un)); if(p){p.level_terbuka=1; p.skor_total=0; p.status=Array(50).fill(false);} }
                 else { try { await fetch(GAS_URL, { method:'POST', body:new URLSearchParams({action:'resetProgress', username:un}) }); } catch(err){} }
                 Utils.hideLoading(); Utils.showToast("Progres direset!"); Admin.loadData();
             },
