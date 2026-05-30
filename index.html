@@ -243,13 +243,22 @@
                     <span class="text-sm font-bold text-gray-600">Skor Kode:</span>
                     <span id="level-score-earned" class="text-xl font-bold text-success">+100</span>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <!-- Menambahkan info Skor Keseluruhan -->
+                <div class="flex justify-between items-center mb-2 pt-2 border-t border-gray-200">
+                    <span class="text-sm font-bold text-gray-600">Total Skor:</span>
+                    <span id="level-total-score" class="text-xl font-bold text-primary">0</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
                     <div id="score-bar" class="bg-success h-2.5 rounded-full" style="width: 100%"></div>
                 </div>
                 <p id="score-note" class="text-xs text-gray-500 mt-2 text-left">Sangat efisien!</p>
             </div>
             
-            <button onclick="Game.nextLevel()" class="w-full bg-primary text-white font-bold py-3 rounded-xl shadow-md hover:bg-indigo-600 transition">Lanjut ke Petualangan <i class="fas fa-arrow-right ml-2"></i></button>
+            <!-- Mengganti tombol tunggal menjadi 2 tombol pilihan -->
+            <div class="flex gap-2">
+                <button onclick="Game.backToMap()" class="w-1/3 bg-gray-200 text-gray-700 font-bold py-3 rounded-xl shadow-sm hover:bg-gray-300 transition text-sm">Kembali</button>
+                <button onclick="Game.playNextLevel()" class="w-2/3 bg-primary text-white font-bold py-3 rounded-xl shadow-md hover:bg-indigo-600 transition text-sm">Lanjut Level <i class="fas fa-arrow-right ml-1"></i></button>
+            </div>
         </div>
     </div>
 
@@ -339,7 +348,7 @@
         const IS_PREVIEW = false; 
         
         // PASTIKAN GAS_URL INI SUDAH DI-DEPLOY SEBAGAI 'ANYONE'
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxg2jtm76-sqw3vu-w4u5HIaUxU_pNfW9_cxy_NO2o_GAx01bSt6539Cr5aWuqW-FZHqw/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbz5XqippWzhLHgJmX5q0kxI2QHABfnLp4A5zwwMjYR9P6NGo_YK7-wFwA20bOL6f65qxQ/exec";
         // ===================================================================
 
         const LEVELS_DATA = [
@@ -603,30 +612,65 @@
             win: async () => {
                 const used = AppState.commands.length;
                 const min = AppState.currentLevel.minBlocks;
+                const lvlId = AppState.currentLevel.id;
+                
                 let score = 100;
                 if(used > min) score -= (used - min) * 10;
                 if(score < 40) score = 40; 
-
-                document.getElementById('level-score-earned').innerText = `+${score}`;
-                document.getElementById('score-bar').style.width = `${score}%`;
-                document.getElementById('score-note').innerText = score === 100 ? "Sempurna! Sangat Efisien!" : `Terlalu panjang! (Batas Ideal: ${min} blok)`;
                 
+                // Cek apakah level ini sudah pernah dimenangkan sebelumnya
+                const isAlreadyBeaten = AppState.progress.status[lvlId - 1];
+
+                // OPTIMISTIC UI UPDATE: Langsung update memori internal agar cepat
+                if (!isAlreadyBeaten) {
+                    AppState.progress.skor_total += score;
+                    AppState.progress.status[lvlId - 1] = true;
+                    if(lvlId >= AppState.progress.level_terbuka) {
+                        AppState.progress.level_terbuka = lvlId + 1;
+                    }
+                } else {
+                    score = 0; // Jika mengulang, tidak dapat skor tambahan
+                }
+
+                // Update info di Modal
+                document.getElementById('level-score-earned').innerText = isAlreadyBeaten ? "+0 (Sudah Selesai)" : `+${score}`;
+                document.getElementById('level-total-score').innerText = AppState.progress.skor_total;
+                document.getElementById('score-bar').style.width = isAlreadyBeaten ? '100%' : `${score}%`;
+                document.getElementById('score-note').innerText = isAlreadyBeaten ? "Latihan ulang selesai!" : (score === 100 ? "Sempurna! Sangat Efisien!" : `Terlalu panjang! (Batas Ideal: ${min} blok)`);
+                
+                // Tampilkan Modal
                 document.getElementById('success-modal').classList.remove('hidden');
                 
-                const lvlId = AppState.currentLevel.id;
-                if(IS_PREVIEW) {
-                    AppState.progress.skor_total += score;
-                    if(lvlId >= AppState.progress.level_terbuka) AppState.progress.level_terbuka = lvlId + 1;
-                    AppState.progress.status[lvlId-1] = true;
-                } else {
+                // BACKEND SAVE (Jalan di latar belakang, tidak membuat web nge-freeze/loading)
+                if(!IS_PREVIEW && !isAlreadyBeaten) {
                     try {
-                        await fetch(GAS_URL, { method: 'POST', body: new URLSearchParams({ action: 'saveProgress', username: AppState.user.username, level: lvlId, score: score }) });
-                        const res = await fetch(GAS_URL, { method: 'POST', body: new URLSearchParams({ action: 'login', username: AppState.user.username, password: AppState.user.password }) });
-                        const dat = await res.json(); if(dat.status==='success') AppState.progress = dat.progress;
-                    } catch(e) { console.error("Save Progress Error:", e); }
+                        fetch(GAS_URL, { 
+                            method: 'POST', 
+                            body: new URLSearchParams({ action: 'saveProgress', username: AppState.user.username, level: lvlId, score: score }) 
+                        });
+                        // Hapus kode login ulang disini karena UI sudah diupdate optimistik
+                    } catch(e) { 
+                        console.error("Save Progress Error:", e); 
+                    }
                 }
             },
-            nextLevel: () => { document.getElementById('success-modal').classList.add('hidden'); UI.showStudentMap(); }
+            backToMap: () => { 
+                document.getElementById('success-modal').classList.add('hidden'); 
+                UI.showStudentMap(); 
+            },
+            playNextLevel: () => {
+                document.getElementById('success-modal').classList.add('hidden');
+                const nextLvlId = AppState.currentLevel.id + 1;
+                const allLevels = [...LEVELS_DATA, ...DummyDB.customLevels];
+                const nextLevelData = allLevels.find(l => l.id === nextLvlId);
+
+                if (nextLevelData) {
+                    Game.start(nextLvlId);
+                } else {
+                    Utils.showToast("Selamat! Kamu telah menyelesaikan semua level!", "success");
+                    UI.showStudentMap();
+                }
+            }
         };
 
         const GameEngine = {
@@ -761,11 +805,9 @@
                 const r = new FileReader();
                 r.onload = async (e) => {
                     const data = new Uint8Array(e.target.result); const wb = XLSX.read(data, {type: 'array'});
-                    // Mencegah konversi format Excel angka agar NISN utuh (0 di depan tidak hilang)
                     const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: false });
                     
                     const students = json.map(row => ({ 
-                        // Memaksa format ke tipe String agar angka 0 aman sepenuhnya
                         username: String(row['Username']||row['username']||'').trim(), 
                         password: String(row['Password']||row['password']||'').trim(), 
                         nama: row['Nama Lengkap']||row['nama'], 
@@ -819,7 +861,7 @@
                         const data = await res.json();
                         const newLvl = JSON.parse(data.candidates[0].content.parts[0].text);
                         newLvl.icon = "fa-magic"; newLvl.category = "AI Gen"; newLvl.grid = [6,6]; newLvl.id = 20 + DummyDB.customLevels.length + 1;
-                        if(IS_PREVIEW) DummyDB.customLevels.push(newLvl); else await fetch(GAS_URL, { method:'POST', body:new URLSearchParams({action:'addLevel', data:JSON.stringify(newLvl)}) });
+                        if(IS_PREVIEW) DummyDB.customLevels.push(newLvl); else await fetch(GAS_URL, { method:'POST', body:newSearchParams({action:'addLevel', data:JSON.stringify(newLvl)}) });
                     }
                     Utils.hideLoading(); Utils.showToast("Soal AI ditambahkan!"); Admin.loadData();
                 } catch(err) { Utils.hideLoading(); Utils.showToast("Gagal meracik.", "error"); }
